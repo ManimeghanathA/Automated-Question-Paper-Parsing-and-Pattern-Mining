@@ -1,0 +1,2670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PYQ Analyser — Evidence-Based Exam Intelligence</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --gold: #C9A84C;
+            --gold-light: #E8C96A;
+            --gold-dim: #8A6E2F;
+            --black: #080808;
+            --black-2: #0F0F0F;
+            --black-3: #161616;
+            --black-4: #1E1E1E;
+            --black-5: #252525;
+            --white: #F5F0E8;
+            --white-dim: #A09880;
+            --white-faint: #2A2820;
+            --green-term: #4ADE80;
+            --red-term: #F87171;
+            --blue-term: #60A5FA;
+            --yellow-term: #FDE68A;
+            --cyan-term: #67E8F9;
+            --purple-term: #A78BFA;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--black);
+            color: var(--white);
+            font-family: 'Cormorant Garamond', serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.4;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--black-2); }
+        ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+
+        .gold-bar-top {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            position: sticky;
+            top: 0;
+            z-index: 201;
+        }
+
+        /* ===========================
+           HEADER
+        =========================== */
+        header {
+            padding: 22px 60px 18px;
+            border-bottom: 1px solid rgba(31, 30, 26, 0.6);
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: fade-in-up 0.6s ease both;
+            background: rgba(8, 8, 8, 0.65);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; left: 0;
+            width: 30%; height: 1px;
+            background: var(--gold);
+        }
+
+        .logo-group { display: flex; flex-direction: column; gap: 6px; }
+
+        .logo-super-eyebrow {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 4px;
+            color: #8d8d8d;
+            text-transform: uppercase;
+        }
+
+        .logo-eyebrow {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 3px;
+            color: var(--gold-dim);
+            text-transform: uppercase;
+        }
+
+        .logo-title { font-size: 42px; font-weight: 300; letter-spacing: 1px; color: var(--white); line-height: 1.3; }
+        .logo-title span { color: var(--gold); font-style: italic; }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .header-info {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--white-dim);
+            text-align: right;
+            line-height: 2;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--green-term);
+            margin-right: 6px;
+            animation: pulse-dot 2s infinite;
+        }
+
+        /* ===========================
+           TERMINAL TOGGLE BUTTON (header)
+        =========================== */
+        .terminal-toggle-btn {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 1px;
+            padding: 8px 14px;
+            background: var(--black-3);
+            border: 1px solid #2A2820;
+            color: var(--gold-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+        }
+
+        .terminal-toggle-btn:hover {
+            border-color: var(--gold-dim);
+            color: var(--gold);
+            background: var(--black-4);
+        }
+
+        .terminal-toggle-btn .t-icon {
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        .terminal-toggle-btn.active {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(201,168,76,0.06);
+        }
+
+        /* ===========================
+           MAIN
+        =========================== */
+        .main {
+            max-width: 1200px;
+            margin: 10px auto 0;
+            padding: 0 40px 160px;
+        }
+
+        /* ===========================
+           GUIDE
+        =========================== */
+        .guide-section {
+            margin: 60px 0 50px;
+            border: 1px solid #1F1E1A;
+            border-top: 2px solid var(--gold);
+            background: var(--black-2);
+            position: relative;
+            overflow: hidden;
+            animation: fade-in-up 0.6s 0.2s ease both;
+        }
+
+        .guide-section::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle at 100% 0%, rgba(201,168,76,0.06) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .guide-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #1F1E1A;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .guide-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 3px;
+            background: var(--gold);
+            color: var(--black);
+            padding: 4px 10px;
+            text-transform: uppercase;
+        }
+
+        .guide-title { font-size: 18px; font-weight: 300; color: var(--white); font-style: italic; }
+
+        .guide-body {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+        }
+
+        .guide-col h4 {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #1F1E1A;
+        }
+
+        .guide-col p, .guide-col li {
+            font-size: 14px; color: var(--white-dim); line-height: 1.9; font-weight: 300;
+        }
+
+        .guide-col ul { list-style: none; }
+        .guide-col ul li::before { content: '›'; color: var(--gold); margin-right: 8px; }
+
+        .guide-notice {
+            margin: 0 30px 30px;
+            padding: 14px 20px;
+            background: rgba(201,168,76,0.07);
+            border-left: 2px solid var(--gold);
+            font-size: 13px;
+            color: var(--white-dim);
+            font-style: italic;
+            line-height: 1.8;
+        }
+
+        /* ===========================
+           WORKFLOW
+        =========================== */
+        .workflow {
+            display: flex;
+            align-items: stretch;
+            margin: 50px 0;
+            border: 1px solid #1F1E1A;
+            animation: fade-in-up 0.6s 0.35s ease both;
+        }
+
+        .workflow-step {
+            flex: 1;
+            padding: 24px 20px;
+            border-right: 1px solid #1F1E1A;
+            background: var(--black-2);
+            transition: background 0.3s;
+        }
+
+        .workflow-step:last-child { border-right: none; }
+        .workflow-step.active { background: var(--black-3); }
+        .workflow-step.done { background: rgba(74,222,128,0.03); }
+        .workflow-step.done .step-num { color: var(--green-term); border-color: var(--green-term); }
+        .workflow-step.done .step-num::after { content: '✓'; }
+        .workflow-step.active .step-num { color: var(--gold); border-color: var(--gold); animation: step-glow 1.5s infinite; }
+
+        @keyframes step-glow {
+            0%,100% { box-shadow: 0 0 0px rgba(201,168,76,0.3); }
+            50% { box-shadow: 0 0 12px rgba(201,168,76,0.5); }
+        }
+
+        .step-num {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            width: 28px; height: 28px;
+            border: 1px solid var(--white-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            color: var(--white-dim);
+        }
+
+        .step-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: var(--white-dim);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .step-title { font-size: 15px; color: var(--white); font-weight: 300; }
+
+        /* ===========================
+           PANELS
+        =========================== */
+        .panel {
+            background: var(--black-2);
+            border: 1px solid #1F1E1A;
+            margin-bottom: 2px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .panel-header {
+            padding: 22px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-step-badge {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 2px;
+            padding: 4px 10px;
+            border: 1px solid var(--gold-dim);
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-right: 16px;
+        }
+
+        .panel-title { font-size: 20px; font-weight: 300; }
+
+        .panel-status {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--white-dim);
+        }
+
+        .panel-status.ok { color: var(--green-term); }
+        .panel-status.err { color: var(--red-term); }
+
+        .panel-body { padding: 0 30px 30px; border-top: 1px solid #1F1E1A; }
+
+        /* ===========================
+           DROP ZONE
+        =========================== */
+        .dropzone {
+            border: 1px dashed #2A2820;
+            background: var(--black-3);
+            padding: 50px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            margin-top: 24px;
+        }
+
+        .dropzone:hover, .dropzone.drag-over {
+            border-color: var(--gold-dim);
+            background: rgba(201,168,76,0.04);
+        }
+
+        .dropzone-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; display: block; }
+        .dropzone-title { font-size: 18px; font-weight: 300; font-style: italic; color: var(--white-dim); margin-bottom: 8px; }
+
+        .dropzone-sub {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 1px;
+            color: #444;
+        }
+
+        .dropzone-sub span { color: var(--gold); text-decoration: underline; cursor: pointer; }
+
+        .dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+        /* ===========================
+           FILE LIST + CANCEL CHIP
+        =========================== */
+        .file-list { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .file-chip {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            padding: 6px 12px;
+            background: var(--black-4);
+            border: 1px solid #2A2820;
+            color: var(--white-dim);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-chip.valid { border-color: var(--green-term); color: var(--green-term); }
+        .file-chip.invalid { border-color: var(--red-term); color: var(--red-term); }
+
+        /* ── CANCEL CHIP (replaces the red error chip) ── */
+        .syllabus-selected-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .syllabus-file-chip {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            padding: 7px 14px;
+            background: var(--black-4);
+            border: 1px solid #2A2820;
+            color: var(--white-dim);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            max-width: 420px;
+        }
+
+        .syllabus-file-chip .file-icon { opacity: 0.5; }
+
+        .btn-cancel-upload {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 1px;
+            padding: 7px 14px;
+            background: transparent;
+            border: 1px solid var(--red-term);
+            color: var(--red-term);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-cancel-upload:hover { background: rgba(248,113,113,0.1); }
+
+        /* ===========================
+           BUTTONS
+        =========================== */
+        .btn-gold {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 14px 32px;
+            background: transparent;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .btn-gold::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--gold);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-gold:hover::before { transform: scaleX(1); }
+        .btn-gold:hover { color: var(--black); }
+        .btn-gold span { position: relative; z-index: 1; }
+        .btn-gold:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn-gold:disabled::before { display: none; }
+
+        .btn-analyze {
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            padding: 18px 60px;
+            background: var(--gold);
+            color: var(--black);
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s;
+            animation: analyze-glow 2.5s infinite;
+        }
+
+        @keyframes analyze-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(201,168,76,0.3), 0 0 60px rgba(201,168,76,0.1); }
+            50% { box-shadow: 0 0 30px rgba(201,168,76,0.6), 0 0 80px rgba(201,168,76,0.2); }
+        }
+
+        .btn-analyze:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+        .btn-analyze:disabled {
+            animation: none;
+            background: #2A2820;
+            color: #444;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-analyze-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 50px 0;
+            gap: 14px;
+        }
+
+        .btn-analyze-hint {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--gold-dim);
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        /* ===========================
+           MODULE SELECT
+        =========================== */
+        .module-row { display: flex; align-items: center; gap: 20px; margin-top: 24px; flex-wrap: wrap; }
+
+        .module-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--gold-dim);
+            text-transform: uppercase;
+        }
+
+        .module-select {
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            background: var(--black-4);
+            border: 1px solid #2A2820;
+            color: var(--white);
+            padding: 10px 16px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .module-select:focus { border-color: var(--gold-dim); }
+        .module-select option { background: var(--black-4); }
+
+        /* ===========================
+           TERMINAL — RESIZABLE
+        =========================== */
+        #terminal-wrapper {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 500;
+            transform: translateY(100%);
+            transition: transform 0.45s cubic-bezier(0.16,1,0.3,1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #terminal-wrapper.visible { transform: translateY(0); }
+
+        /* drag-to-resize handle */
+        .terminal-resize-handle {
+            height: 5px;
+            background: linear-gradient(180deg, rgba(201,168,76,0.25) 0%, transparent 100%);
+            cursor: ns-resize;
+            width: 100%;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .terminal-resize-handle::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 40px; height: 3px;
+            background: var(--gold-dim);
+            border-radius: 2px;
+        }
+
+        .terminal-header {
+            background: linear-gradient(135deg, #111 0%, #0D0D0D 100%);
+            border-top: 1px solid var(--gold-dim);
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            gap: 14px;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        /* ── NEW DOTS: diamond / square shapes with glow ── */
+        .terminal-dots {
+            display: flex;
+            gap: 7px;
+            align-items: center;
+        }
+
+        .terminal-dots .tdot {
+            width: 11px;
+            height: 11px;
+            transform: rotate(45deg);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .terminal-dots .tdot-r {
+            background: #FF5F57;
+            box-shadow: 0 0 6px rgba(255,95,87,0.5);
+        }
+
+        .terminal-dots .tdot-y {
+            background: #FFBD2E;
+            box-shadow: 0 0 6px rgba(255,189,46,0.5);
+        }
+
+        .terminal-dots .tdot-g {
+            background: #28C840;
+            box-shadow: 0 0 6px rgba(40,200,64,0.5);
+        }
+
+        .terminal-dots .tdot:hover { filter: brightness(1.3); transform: rotate(45deg) scale(1.15); }
+
+        .terminal-dots .tdot::after {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 1px;
+        }
+
+        .terminal-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--gold);
+            letter-spacing: 2px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .terminal-witty {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--white-dim);
+            font-style: italic;
+        }
+
+        .terminal-cancel {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            padding: 4px 12px;
+            background: transparent;
+            border: 1px solid var(--red-term);
+            color: var(--red-term);
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .terminal-cancel:hover { background: rgba(248,113,113,0.1); }
+
+        .terminal-body {
+            background: #050505;
+            overflow-y: auto;
+            padding: 14px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.7;
+            height: 240px;
+            flex-shrink: 0;
+        }
+
+        .terminal-body::-webkit-scrollbar { width: 3px; }
+        .terminal-body::-webkit-scrollbar-thumb { background: #2A2820; }
+
+        .t-line {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            opacity: 0;
+            animation: line-appear 0.25s forwards;
+        }
+
+        @keyframes line-appear { to { opacity: 1; } }
+
+        .t-prompt { color: var(--gold-dim); user-select: none; flex-shrink: 0; }
+        .t-text { flex: 1; }
+        .t-ok { color: var(--green-term); }
+        .t-err { color: var(--red-term); }
+        .t-info { color: var(--blue-term); }
+        .t-warn { color: var(--yellow-term); }
+        .t-sys { color: var(--cyan-term); }
+        .t-dim { color: #444; }
+
+        .t-loading { color: var(--gold); display: flex; align-items: center; gap: 8px; }
+
+        .loader-chars { display: inline-flex; gap: 2px; }
+        .loader-chars span { animation: loader-bounce 1.2s infinite; color: var(--gold); }
+        .loader-chars span:nth-child(1) { animation-delay: 0s; }
+        .loader-chars span:nth-child(2) { animation-delay: 0.1s; }
+        .loader-chars span:nth-child(3) { animation-delay: 0.2s; }
+        .loader-chars span:nth-child(4) { animation-delay: 0.3s; }
+        .loader-chars span:nth-child(5) { animation-delay: 0.4s; }
+        .loader-chars span:nth-child(6) { animation-delay: 0.5s; }
+        .loader-chars span:nth-child(7) { animation-delay: 0.6s; }
+        .loader-chars span:nth-child(8) { animation-delay: 0.7s; }
+        .loader-chars span:nth-child(9) { animation-delay: 0.8s; }
+
+        @keyframes loader-bounce {
+            0%,80%,100% { opacity: 0.2; transform: scaleY(0.5); }
+            40% { opacity: 1; transform: scaleY(1); }
+        }
+
+        .progress-footer {
+            padding: 8px 20px;
+            background: #020202;
+            border-top: 1px solid #161616;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        .progress-bar-outer { flex: 1; height: 2px; background: #1A1A1A; }
+        .progress-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-pct {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--gold-dim);
+            min-width: 34px;
+            text-align: right;
+        }
+
+        /* ===========================
+           ANALYSIS OVERLAY
+        =========================== */
+        .analysis-overlay {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+            border: 1px solid #1F1E1A;
+            background: var(--black-2);
+            margin: 40px 0;
+        }
+
+        .analysis-overlay.visible { display: block; }
+
+        .analysis-spinner {
+            width: 60px; height: 60px;
+            border: 1px solid #1F1E1A;
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 1.2s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .analysis-msg { font-size: 24px; font-weight: 300; font-style: italic; color: var(--white); margin-bottom: 10px; }
+        .analysis-sub { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--gold-dim); letter-spacing: 2px; }
+
+        .analysis-quote {
+            margin-top: 28px;
+            font-size: 15px;
+            font-style: italic;
+            color: var(--white-dim);
+            max-width: 560px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.8;
+            min-height: 48px;
+            transition: opacity 0.6s ease;
+            padding: 16px 24px;
+            border-left: 2px solid var(--gold-dim);
+            text-align: left;
+            background: rgba(201,168,76,0.04);
+        }
+
+        /* ===========================
+           DASHBOARD
+        =========================== */
+        #dashboard { display: none; opacity: 0; transition: opacity 0.8s ease; }
+        #dashboard.visible { display: block; opacity: 1; }
+
+        .section-divider {
+            margin: 70px 0 40px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .section-divider-num {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            padding: 6px 12px;
+            flex-shrink: 0;
+        }
+
+        .section-divider-title { font-size: 26px; font-weight: 300; color: var(--white); flex-shrink: 0; }
+        .section-divider-line { flex: 1; height: 1px; background: linear-gradient(90deg, #2A2820, transparent); }
+
+        /* IMPORTANCE */
+        .importance-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 2px; }
+
+        .importance-card {
+            background: var(--black-2);
+            border: 1px solid #1F1E1A;
+            padding: 28px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .importance-card.revealed { opacity: 1; transform: translateY(0); }
+        .importance-card:hover { border-color: #2A2820; background: var(--black-3); }
+
+        .card-module-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 3px;
+            color: var(--gold-dim);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-module-label::after { content: ''; flex: 1; height: 1px; background: #1F1E1A; }
+
+        .topic-row { margin-bottom: 14px; }
+        .topic-row-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+        .topic-name { font-size: 14px; color: var(--white); font-weight: 300; }
+        .topic-meta { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--white-dim); text-align: right; }
+        .topic-bar-outer { height: 2px; background: #1A1A1A; }
+
+        .topic-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+            width: 0%;
+            transition: width 1s ease;
+        }
+
+        .topic-rank {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            color: var(--black);
+            background: var(--gold);
+            padding: 2px 6px;
+            margin-right: 8px;
+        }
+
+        /* FREQUENCY */
+        .freq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2px; }
+
+        .freq-card {
+            background: var(--black-2);
+            border: 1px solid #1F1E1A;
+            padding: 24px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .freq-card.revealed { opacity: 1; transform: translateY(0); }
+
+        .freq-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #161616; }
+        .freq-row:last-child { border-bottom: none; }
+        .freq-topic { font-size: 13px; color: var(--white-dim); }
+        .freq-count { font-family: 'Space Mono', monospace; font-size: 18px; color: var(--gold); font-weight: 700; }
+
+        /* CANONICAL */
+        .canonical-card {
+            background: var(--black-2);
+            border: 1px solid #1F1E1A;
+            border-left: 2px solid var(--gold-dim);
+            padding: 28px;
+            margin-bottom: 2px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .canonical-card.revealed { opacity: 1; transform: translateY(0); }
+
+        .canonical-topic {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 3px;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .canonical-q {
+            font-size: 15px;
+            font-weight: 300;
+            color: var(--white);
+            line-height: 1.8;
+            margin-bottom: 14px;
+            font-style: italic;
+            padding-left: 16px;
+            border-left: 1px solid #2A2820;
+        }
+
+        .canonical-meta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+
+        .canonical-count {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            padding: 4px 12px;
+            background: rgba(201,168,76,0.1);
+            border: 1px solid var(--gold-dim);
+            color: var(--gold);
+        }
+
+        .canonical-ref {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            color: var(--white-dim);
+            padding: 4px 10px;
+            background: var(--black-4);
+            border: 1px solid #1F1E1A;
+        }
+
+        /* CHARTS */
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 2px; }
+
+        .chart-card {
+            background: var(--black-2);
+            border: 1px solid #1F1E1A;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .chart-card.revealed { opacity: 1; transform: translateY(0); }
+        .chart-card.full-width { grid-column: 1 / -1; }
+
+        .chart-card-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: var(--gold-dim);
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .chart-wrap { width: 100%; max-width: 320px; height: 260px; }
+
+        /* ===========================
+           STYLE ANALYSIS — RICH
+        =========================== */
+
+        /* Top summary row */
+        .style-summary-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+
+        .style-summary-card {
+            background: var(--black-2);
+            border: 1px solid #1F1E1A;
+            padding: 30px 24px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .style-summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+        }
+
+        .style-summary-card.numerical::before { background: var(--gold); }
+        .style-summary-card.descriptive::before { background: var(--blue-term); }
+        .style-summary-card.analytical::before { background: var(--purple-term); }
+
+        .style-summary-card.revealed { opacity: 1; transform: translateY(0); }
+
+        .style-summary-icon {
+            font-size: 28px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .style-summary-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .style-summary-card.numerical .style-summary-label { color: var(--gold); }
+        .style-summary-card.descriptive .style-summary-label { color: var(--blue-term); }
+        .style-summary-card.analytical .style-summary-label { color: var(--purple-term); }
+
+        .style-summary-pct {
+            font-size: 48px;
+            font-weight: 300;
+            letter-spacing: -2px;
+            color: var(--white);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .style-summary-desc {
+            font-size: 12px;
+            color: var(--white-dim);
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        /* Radar + Stacked bar row */
+        .style-charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+
+        .style-chart-card {
+            background: var(--black-2);
+            border: 1px solid #1F1E1A;
+            padding: 28px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .style-chart-card.revealed { opacity: 1; transform: translateY(0); }
+
+        .style-chart-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: var(--gold-dim);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .style-chart-canvas-wrap {
+            height: 240px;
+            position: relative;
+        }
+
+        /* Per-paper stacked breakdown */
+        .style-paper-breakdown {
+            background: var(--black-2);
+            border: 1px solid #1F1E1A;
+            padding: 28px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            margin-bottom: 2px;
+        }
+
+        .style-paper-breakdown.revealed { opacity: 1; transform: translateY(0); }
+
+        .style-paper-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: var(--gold-dim);
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        .paper-style-row {
+            margin-bottom: 20px;
+        }
+
+        .paper-style-name {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--white-dim);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stacked-bar {
+            height: 20px;
+            display: flex;
+            border-radius: 1px;
+            overflow: hidden;
+        }
+
+        .stacked-seg {
+            height: 100%;
+            transition: width 1.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Mono', monospace;
+            font-size: 8px;
+            color: rgba(0,0,0,0.7);
+            font-weight: 700;
+            overflow: hidden;
+        }
+
+        .stacked-seg.numerical { background: var(--gold); }
+        .stacked-seg.descriptive { background: var(--blue-term); }
+        .stacked-seg.analytical { background: var(--purple-term); }
+
+        .stacked-legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .stacked-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            color: var(--white-dim);
+        }
+
+        .legend-dot {
+            width: 8px; height: 8px;
+            border-radius: 1px;
+            flex-shrink: 0;
+        }
+
+        /* Insight callout boxes */
+        .style-insights-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+        }
+
+        .insight-card {
+            background: var(--black-3);
+            border: 1px solid #1F1E1A;
+            padding: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .insight-card.revealed { opacity: 1; transform: translateY(0); }
+
+        .insight-icon {
+            font-size: 22px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .insight-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .insight-text {
+            font-size: 13px;
+            color: var(--white-dim);
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        /* ===========================
+           FOOTER
+        =========================== */
+        footer {
+            border-top: 1px solid #1F1E1A;
+            padding: 30px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-left { font-family: 'Space Mono', monospace; font-size: 9px; color: #333; letter-spacing: 2px; }
+        .footer-right { font-size: 12px; color: #2A2820; font-style: italic; }
+
+        /* ===========================
+           UTILITY
+        =========================== */
+        .hidden { display: none !important; }
+        .dimmed { opacity: 0.35; pointer-events: none; }
+
+        .info-banner {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            padding: 10px 16px;
+            margin-top: 12px;
+            border-left: 2px solid;
+            letter-spacing: 1px;
+        }
+
+        .info-banner.ok { border-color: var(--green-term); color: var(--green-term); background: rgba(74,222,128,0.05); }
+        .info-banner.err { border-color: var(--red-term); color: var(--red-term); background: rgba(248,113,113,0.05); }
+        .info-banner.info { border-color: var(--blue-term); color: var(--blue-term); background: rgba(96,165,250,0.05); }
+
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @media (max-width: 768px) {
+            header { padding: 24px 20px; flex-direction: column; align-items: flex-start; gap: 12px; }
+            .main { padding: 0 16px 160px; }
+            .guide-body { grid-template-columns: 1fr; }
+            .workflow { flex-direction: column; }
+            .workflow-step { border-right: none; border-bottom: 1px solid #1F1E1A; }
+            .style-summary-row, .style-charts-row, .style-insights-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="gold-bar-top"></div>
+
+<!-- ======== HEADER ======== -->
+<header>
+    <div class="logo-group">
+        <div class="logo-super-eyebrow">Automated Question Paper Parsing and Pattern Mining</div>
+        <h1 class="logo-title">PYQ <span>Analyser</span></h1>
+        <div class="logo-eyebrow">Evidence-Based Intelligence System</div>
+    </div>
+    <div class="header-right">
+        <!-- TERMINAL TOGGLE BUTTON -->
+        <button class="terminal-toggle-btn" id="terminalToggleBtn" onclick="toggleTerminal()">
+            <span class="t-icon">⬡</span>
+            <span id="terminalToggleLabel">Show Terminal</span>
+        </button>
+        <div class="header-info">
+            <div><span class="status-dot"></span>System Online</div>
+            <div>VIT Examination Analytics</div>
+            <div>v2.0 — Production</div>
+        </div>
+    </div>
+</header>
+
+<!-- ======== MAIN ======== -->
+<div class="main">
+
+    <!-- USER GUIDE -->
+    <div class="guide-section">
+        <div class="guide-header">
+            <div class="guide-tag">User Guide</div>
+            <div class="guide-title">How to use this system effectively</div>
+        </div>
+        <div class="guide-body">
+            <div class="guide-col">
+                <h4>What this does</h4>
+                <p>PYQ Analyser transforms your previous year question papers and official syllabus into structured, evidence-backed exam preparation insights. No guesswork. Only data.</p>
+            </div>
+            <div class="guide-col">
+                <h4>Best Practices</h4>
+                <ul>
+                    <li>Upload the official VIT syllabus PDF for your course.</li>
+                    <li>Minimum 3 PYQs are required for reliable analysis.</li>
+                    <li>Upload well-cropped, high-quality scanned Qn. papers.</li>
+                    <li>Do not upload mobile camera scans converted to PDF.</li>
+                    <li>More PYQs yields higher confidence in results.</li>
+                    <li>All PDFs must belong to the same course code.</li>
+                    <li>Recommended file size: under 20 MB per paper.</li>
+                </ul>
+            </div>
+            <div class="guide-col">
+                <h4>What you will get</h4>
+                <ul>
+                    <li>Module-wise topic importance rankings</li>
+                    <li>Frequency analysis of asked topics</li>
+                    <li>Semantically clustered repeated questions</li>
+                    <li>Module-wise grading distribution charts</li>
+                    <li>Paper style analysis (Numerical vs Descriptive vs Analytical)</li>
+                </ul>
+            </div>
+        </div>
+        <div class="guide-notice">
+            ⚠ This system performs analysis and prioritization only — it does not predict questions or generate answers. All insights are derived directly from the uploaded question papers and are fully traceable.
+        </div>
+        <div class="guide-notice">
+        ⚠ Upload standard A4 scanned PDFs only (300 DPI or lower).
+        High-resolution scans (600 DPI+) or oversized PDFs may fail during processing.
+        If upload fails, re-export or rescan the document at 300 DPI before retrying.
+        </div>
+    </div>
+
+    <!-- WORKFLOW BAR -->
+    <div class="workflow" id="workflowBar">
+        <div class="workflow-step active" id="ws-1">
+            <div class="step-num">01</div>
+            <div class="step-label">Step 01</div>
+            <div class="step-title">Upload Syllabus</div>
+        </div>
+        <div class="workflow-step" id="ws-2">
+            <div class="step-num">02</div>
+            <div class="step-label">Step 02</div>
+            <div class="step-title">Upload PYQs</div>
+        </div>
+        <div class="workflow-step" id="ws-3">
+            <div class="step-num">03</div>
+            <div class="step-label">Step 03</div>
+            <div class="step-title">Select Modules</div>
+        </div>
+        <div class="workflow-step" id="ws-4">
+            <div class="step-num">04</div>
+            <div class="step-label">Step 04</div>
+            <div class="step-title">Run Analysis</div>
+        </div>
+        <div class="workflow-step" id="ws-5">
+            <div class="step-num">05</div>
+            <div class="step-label">Step 05</div>
+            <div class="step-title">View Results</div>
+        </div>
+    </div>
+
+    <!-- STEP 1 — SYLLABUS -->
+    <div class="panel" id="panelSyllabus">
+        <div class="panel-header">
+            <div style="display:flex;align-items:center;">
+                <span class="panel-step-badge">Step 01</span>
+                <span class="panel-title">Upload Syllabus Document</span>
+            </div>
+            <span class="panel-status" id="syllabusStatus">Awaiting upload</span>
+        </div>
+        <div class="panel-body" style="padding-top:24px;">
+            <div class="dropzone" id="syllabusDrop">
+                <input type="file" id="syllabusInput" accept=".pdf">
+                <span class="dropzone-icon">📄</span>
+                <div class="dropzone-title">Drop your VIT syllabus PDF here</div>
+                <div class="dropzone-sub">Drag & drop, or <span>click to browse</span> — PDF format only</div>
+            </div>
+            <!-- Selected file row — shown after picking, hidden after successful parse -->
+            <div id="syllabusSelectedRow" class="syllabus-selected-row" style="display:none;">
+                <div class="syllabus-file-chip">
+                    <span class="file-icon">📄</span>
+                    <span id="syllabusFileName">file.pdf</span>
+                </div>
+                <button class="btn-cancel-upload" id="btnCancelSyllabus" onclick="cancelSyllabusUpload()">
+                    ✕ Cancel Upload
+                </button>
+            </div>
+            <div id="syllabusMsg"></div>
+            <button class="btn-gold" id="btnUploadSyllabus" onclick="uploadSyllabus()">
+                <span>↑ Parse Syllabus</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- STEP 2 — PAPERS (hidden until syllabus done) -->
+    <div class="panel dimmed" id="panelPapers">
+        <div class="panel-header">
+            <div style="display:flex;align-items:center;">
+                <span class="panel-step-badge">Step 02</span>
+                <span class="panel-title">Upload Previous Year Question Papers</span>
+            </div>
+            <span class="panel-status" id="papersStatus">Locked — Complete Step 01 first</span>
+        </div>
+        <div class="panel-body" style="padding-top:24px;">
+            <div class="dropzone" id="papersDrop">
+                <input type="file" id="papersInput" accept=".pdf" multiple>
+                <span class="dropzone-icon">📚</span>
+                <div class="dropzone-title">Drop 3 or more PYQ PDFs here</div>
+                <div class="dropzone-sub">All papers must match the course code in your syllabus</div>
+                <p style="font-family:'Space Mono',monospace;font-size:10px;color:#444;margin-top:8px;">
+                    Recommended: A4 size · 300 DPI · &lt; 20MB per page
+                </p>
+            </div>
+            <div class="file-list" id="papersFileList"></div>
+            <div id="papersMsg"></div>
+            <button class="btn-gold" id="btnUploadPapers" onclick="uploadPapers()">
+                <span>↑ Validate & Upload Papers</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- STEP 3 — MODULES (hidden until papers validated) -->
+    <div class="panel dimmed" id="panelModules" style="display:none;">
+        <div class="panel-header">
+            <div style="display:flex;align-items:center;">
+                <span class="panel-step-badge">Step 03</span>
+                <span class="panel-title">Select Module Range for Analysis</span>
+            </div>
+            <span class="panel-status" id="modulesStatus">Ready — select range</span>
+        </div>
+        <div class="panel-body" style="padding-top:24px;">
+            <p style="font-size:14px;color:var(--white-dim);font-weight:300;margin-bottom:4px;">Define the scope of your exam — select the modules you want analysed.</p>
+            <p style="font-family:'Space Mono',monospace;font-size:10px;color:#444;margin-bottom:8px;">CAT-1: Modules 1–3 · CAT-2: Modules 4–6 · FAT: Modules 1–7</p>
+            <div class="module-row">
+                <span class="module-label">From module</span>
+                <select class="module-select" id="startModule"></select>
+                <span class="module-label">to module</span>
+                <select class="module-select" id="endModule"></select>
+            </div>
+            <div id="modulesMsg"></div>
+        </div>
+    </div>
+
+    <!-- ANALYSE BUTTON (hidden until papers validated) -->
+    <div class="btn-analyze-wrap" id="analyzeSection" style="display:none;">
+        <button class="btn-analyze" id="btnAnalyze" onclick="runAnalysis()">
+            ⬡ &nbsp;Run Analysis&nbsp; ⬡
+        </button>
+        <div class="btn-analyze-hint">Powered by semantic topic mapping & frequency intelligence</div>
+    </div>
+
+    <!-- ANALYSIS WAITING -->
+    <div class="analysis-overlay" id="analysisOverlay">
+        <div class="analysis-spinner"></div>
+        <div class="analysis-msg">Analysing your question papers…</div>
+        <div class="analysis-sub">This may take a minute — feel free to relax before you start preparing for your exam</div>
+        <div class="analysis-quote" id="analysisQuote"></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard">
+
+        <div class="section-divider">
+            <div class="section-divider-num">01 / 05</div>
+            <div class="section-divider-title">What should you study?</div>
+            <div class="section-divider-line"></div>
+        </div>
+        <p style="font-size:14px;color:var(--white-dim);margin-bottom:24px;font-weight:300;">Module-wise topic importance ranked by frequency, marks, and exam history.</p>
+        <div class="importance-grid" id="importanceGrid"></div>
+
+        <div class="section-divider">
+            <div class="section-divider-num">02 / 05</div>
+            <div class="section-divider-title">Most Frequently Asked Topics</div>
+            <div class="section-divider-line"></div>
+        </div>
+        <p style="font-size:14px;color:var(--white-dim);margin-bottom:24px;font-weight:300;">Raw frequency count — how many times each topic has appeared across all uploaded papers.</p>
+        <div class="freq-grid" id="frequencyGrid"></div>
+
+        <div class="section-divider">
+            <div class="section-divider-num">03 / 05</div>
+            <div class="section-divider-title">Repeated Questions Detected</div>
+            <div class="section-divider-line"></div>
+        </div>
+        <p style="font-size:14px;color:var(--white-dim);margin-bottom:24px;font-weight:300;">Questions clustered semantically — same concept, different phrasing. Highest priority to revise.</p>
+        <div id="canonicalContainer"></div>
+
+        <div class="section-divider">
+            <div class="section-divider-num">04 / 05</div>
+            <div class="section-divider-title">Module-Wise Grading Distribution</div>
+            <div class="section-divider-line"></div>
+        </div>
+        <p style="font-size:14px;color:var(--white-dim);margin-bottom:24px;font-weight:300;">What percentage of marks each module contributes — averaged across all papers.</p>
+        <div class="chart-grid" id="gradingGrid"></div>
+
+        <div class="section-divider">
+            <div class="section-divider-num">05 / 05</div>
+            <div class="section-divider-title">Question Paper Style Analysis</div>
+            <div class="section-divider-line"></div>
+        </div>
+        <p style="font-size:14px;color:var(--white-dim);margin-bottom:24px;font-weight:300;">How the examiner asks questions — equip yourself with the right preparation strategy.</p>
+        <div id="styleContainer"></div>
+
+    </div>
+
+</div><!-- /main -->
+
+<footer>
+    <div class="footer-left">PYQ Analyser · Evidence-Based Exam Intelligence</div>
+    <div class="footer-right">Analysis derived solely from uploaded data</div>
+</footer>
+
+<!-- ======== TERMINAL ======== -->
+<div id="terminal-wrapper">
+    <div class="terminal-resize-handle" id="terminalResizeHandle"></div>
+    <div class="terminal-header">
+        <div class="terminal-dots">
+            <span class="tdot tdot-r" title="Close" onclick="hideTerminal()"></span>
+            <span class="tdot tdot-y" title="Minimise" onclick="minimiseTerminal()"></span>
+            <span class="tdot tdot-g" title="Expand" onclick="expandTerminal()"></span>
+        </div>
+        <div class="terminal-title">PYQ ENGINE — RUNTIME CONSOLE</div>
+        <div class="terminal-witty" id="terminalWitty">Please do not kill me, I'm working for you!</div>
+        <button class="terminal-cancel" id="terminalCancelBtn" onclick="stopAndReset()">⬛ Stop Process</button>
+    </div>
+    <div class="terminal-body" id="terminalBody"></div>
+    <div class="progress-footer">
+        <div class="progress-bar-outer">
+            <div class="progress-bar-inner" id="terminalProgress"></div>
+        </div>
+        <div class="progress-pct" id="terminalProgressPct">0%</div>
+    </div>
+</div>
+
+<script>
+/* =========================================
+   STATE
+========================================= */
+let currentJob = null;
+let pollInterval = null;
+let currentStep = 1;
+let syllabusModules = [];
+let terminalVisible = false;
+let terminalBodyHeight = 240; // px, default
+
+const wittyMessages = [
+    "Please do not kill me, I'm working for you!",
+    "Brewing academic intelligence… ☕",
+    "Reading papers so you don't have to…",
+    "Semantic neurons firing at full capacity…",
+    "Triangulating importance vectors…",
+    "Do not disturb — genius at work.",
+    "Mapping your exam universe, one question at a time…",
+    "This is not procrastination. This is preparation.",
+    "Your future self will thank you for this.",
+    "Computing the path of least regret…",
+];
+
+/* =========================================
+   TERMINAL TOGGLE (header button)
+========================================= */
+function toggleTerminal() {
+    if (terminalVisible) {
+        hideTerminal();
+    } else {
+        showTerminal();
+    }
+}
+
+function updateToggleBtn() {
+    const btn = document.getElementById('terminalToggleBtn');
+    const label = document.getElementById('terminalToggleLabel');
+    if (terminalVisible) {
+        btn.classList.add('active');
+        label.textContent = 'Hide Terminal';
+    } else {
+        btn.classList.remove('active');
+        label.textContent = 'Show Terminal';
+    }
+}
+
+function showTerminal() {
+    terminalVisible = true;
+    document.getElementById('terminal-wrapper').classList.add('visible');
+    applyTerminalHeight(terminalBodyHeight);
+    randomWitty();
+    updateToggleBtn();
+}
+
+function hideTerminal() {
+    terminalVisible = false;
+    document.getElementById('terminal-wrapper').classList.remove('visible');
+    updateToggleBtn();
+}
+
+function minimiseTerminal() {
+    terminalBodyHeight = 60;
+    applyTerminalHeight(60);
+}
+
+function expandTerminal() {
+    terminalBodyHeight = 400;
+    applyTerminalHeight(400);
+}
+
+function applyTerminalHeight(h) {
+    document.getElementById('terminalBody').style.height = h + 'px';
+}
+
+/* =========================================
+   TERMINAL RESIZE (drag handle)
+========================================= */
+(function setupResize() {
+    const handle = document.getElementById('terminalResizeHandle');
+    // Initialize height on the DOM element so it matches state
+    document.getElementById('terminalBody').style.height = terminalBodyHeight + 'px';
+
+    let dragging = false;
+    let startY = 0;
+    let startH = 0;
+
+    handle.addEventListener('mousedown', e => {
+        e.preventDefault();
+        dragging = true;
+        startY = e.clientY;
+        startH = terminalBodyHeight;
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'ns-resize';
+    });
+
+    document.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        // Dragging UP (decreasing clientY) = terminal grows taller
+        const delta = startY - e.clientY;
+        const newH = Math.max(60, Math.min(600, startH + delta));
+        terminalBodyHeight = newH;
+        document.getElementById('terminalBody').style.height = newH + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+    });
+})();
+
+/* =========================================
+   TERMINAL ENGINE
+========================================= */
+function randomWitty() {
+    const w = wittyMessages[Math.floor(Math.random() * wittyMessages.length)];
+    document.getElementById('terminalWitty').textContent = w;
+}
+
+function tLog(text, type = '') {
+    const body = document.getElementById('terminalBody');
+    const line = document.createElement('div');
+    line.className = 't-line';
+    const classes = { ok:'t-ok', err:'t-err', info:'t-info', warn:'t-warn', sys:'t-sys', dim:'t-dim' };
+    const prompt = type === 'ok' ? '✓' : type === 'err' ? '✗' : type === 'info' ? '→' : type === 'sys' ? '⬡' : '›';
+    line.innerHTML = `<span class="t-prompt">${prompt}</span><span class="t-text ${classes[type] || ''}">${text}</span>`;
+    body.appendChild(line);
+    body.scrollTop = body.scrollHeight;
+}
+
+function tLoader(text) {
+    const body = document.getElementById('terminalBody');
+    const line = document.createElement('div');
+    line.className = 't-line';
+    line.id = 't-loading-line';
+    line.innerHTML = `<span class="t-prompt">⬡</span><span class="t-text t-loading">${text}&nbsp;<span class="loader-chars"><span>▪</span><span>▪</span><span>▪</span><span>▪</span><span>▪</span><span>▪</span><span>▪</span><span>▪</span><span>▪</span></span></span>`;
+    body.appendChild(line);
+    body.scrollTop = body.scrollHeight;
+}
+
+function tRemoveLoader() {
+    const el = document.getElementById('t-loading-line');
+    if (el) el.remove();
+}
+
+function tClear() {
+    document.getElementById('terminalBody').innerHTML = '';
+    setProgress(0);
+}
+
+function setProgress(pct) {
+    document.getElementById('terminalProgress').style.width = pct + '%';
+    document.getElementById('terminalProgressPct').textContent = Math.round(pct) + '%';
+}
+
+function tBanner() {
+    tLog('─────────────────────────────────────────', 'dim');
+    tLog('PYQ ANALYSER v2.0  ·  RUNTIME CONSOLE', 'sys');
+    tLog('─────────────────────────────────────────', 'dim');
+}
+
+/* =========================================
+   WORKFLOW STEPS
+========================================= */
+function setStep(n) {
+    currentStep = n;
+    for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById(`ws-${i}`);
+        if (!el) continue;
+        el.classList.remove('active', 'done');
+        if (i < n) el.classList.add('done');
+        else if (i === n) el.classList.add('active');
+    }
+}
+
+function unlockPanel(id, show = false) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('dimmed');
+    if (show) {
+        el.style.display = '';
+        // animate in
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(16px)';
+        el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        requestAnimationFrame(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        });
+    }
+}
+
+/* =========================================
+   DRAG + DROP
+========================================= */
+function setupDrop(dropId, inputId, multi, onFiles) {
+    const drop = document.getElementById(dropId);
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+    drop.addEventListener('drop', e => {
+        e.preventDefault();
+        drop.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        updateFileInput(inputId, files);
+        onFiles(files);
+    });
+    document.getElementById(inputId).addEventListener('change', e => onFiles(e.target.files));
+}
+
+function updateFileInput(inputId, files) {
+    const dt = new DataTransfer();
+    for (let f of files) dt.items.add(f);
+    document.getElementById(inputId).files = dt.files;
+}
+
+function renderFileChips(containerId, files, validNames) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    for (let f of files) {
+        const chip = document.createElement('div');
+        const isValid = validNames ? validNames.includes(f.name) : null;
+        chip.className = 'file-chip' + (isValid === true ? ' valid' : isValid === false ? ' invalid' : '');
+        chip.textContent = (isValid === true ? '✓ ' : isValid === false ? '✗ ' : '') + f.name;
+        el.appendChild(chip);
+    }
+}
+
+/* Syllabus drop — shows selected file row with cancel button */
+setupDrop('syllabusDrop', 'syllabusInput', false, files => {
+    if (!files.length) return;
+    document.getElementById('syllabusFileName').textContent = files[0].name;
+    document.getElementById('syllabusSelectedRow').style.display = 'flex';
+    setMessage('syllabusMsg', `${files[0].name} selected`, 'info');
+});
+
+setupDrop('papersDrop', 'papersInput', true, files => {
+    if (files.length) {
+        renderFileChips('papersFileList', files);
+        setMessage('papersMsg', `${files.length} file(s) selected`, 'info');
+    }
+});
+
+/* Cancel syllabus upload — clears selection */
+function cancelSyllabusUpload() {
+    // Reset input
+    const input = document.getElementById('syllabusInput');
+    input.value = '';
+    // Hide selected row
+    document.getElementById('syllabusSelectedRow').style.display = 'none';
+    // Clear messages
+    document.getElementById('syllabusMsg').innerHTML = '';
+    // Re-enable parse button in case it was disabled
+    document.getElementById('btnUploadSyllabus').disabled = false;
+    tLog('Syllabus upload cancelled', 'warn');
+}
+
+function setMessage(id, text, type = 'info') {
+    const el = document.getElementById(id);
+    el.innerHTML = `<div class="info-banner ${type}">${text}</div>`;
+}
+
+/* =========================================
+   UPLOAD SYLLABUS
+========================================= */
+async function uploadSyllabus() {
+    const file = document.getElementById('syllabusInput').files[0];
+    if (!file) { setMessage('syllabusMsg', 'Please select a syllabus PDF first.', 'err'); return; }
+
+    const btn = document.getElementById('btnUploadSyllabus');
+    btn.disabled = true;
+    showTerminal();
+    tClear();
+    tBanner();
+    tLoader('Uploading syllabus…');
+    setProgress(10);
+
+    const form = new FormData();
+    form.append('file', file);
+
+    try {
+        const res = await fetch('/upload-syllabus', { method: 'POST', body: form });
+        const data = await res.json();
+        tRemoveLoader();
+
+        if (res.ok) {
+            setProgress(35);
+            tLog('Syllabus received', 'ok');
+            tLog('Running PDF parser…', 'info');
+            await delay(400);
+            tLog('Parsing module definitions…', 'info');
+            await delay(400);
+            tLog(`Course Code  →  ${data.course_code}`, 'sys');
+            tLog(`Course Title →  ${data.course_title}`, 'sys');
+            tLog(`Modules Detected →  ${data.modules.length}`, 'sys');
+            tLog('Syllabus validated successfully', 'ok');
+            setProgress(40);
+
+            document.getElementById('syllabusStatus').textContent = `✓ ${data.course_code} — ${data.course_title}`;
+            document.getElementById('syllabusStatus').classList.add('ok');
+
+            // Hide the cancel row — upload done
+            document.getElementById('syllabusSelectedRow').style.display = 'none';
+
+            syllabusModules = data.modules;
+            populateModules(data.modules);
+            unlockPanel('panelPapers');
+            document.getElementById('papersStatus').textContent = 'Ready to upload';
+            setStep(2);
+            setMessage('syllabusMsg', `✓ ${data.course_code} — ${data.course_title} — ${data.modules.length} modules detected`, 'ok');
+        } else {
+            tLog('Failed to parse syllabus', 'err');
+            tLog('Please upload a valid VIT syllabus sheet', 'err');
+            setMessage('syllabusMsg', '✗ Invalid syllabus. Please upload a valid VIT syllabus PDF.', 'err');
+            document.getElementById('syllabusStatus').classList.add('err');
+            document.getElementById('syllabusStatus').textContent = '✗ Parse failed';
+            btn.disabled = false;
+        }
+    } catch(e) {
+        tRemoveLoader();
+        tLog('Network error: ' + e.message, 'err');
+        setMessage('syllabusMsg', '✗ Network error. Is the server running?', 'err');
+        btn.disabled = false;
+    }
+}
+
+/* =========================================
+   UPLOAD PAPERS
+========================================= */
+async function uploadPapers() {
+    const files = document.getElementById('papersInput').files;
+    if (files.length < 3) {
+        setMessage('papersMsg', '✗ Minimum 3 question papers required.', 'err');
+        return;
+    }
+
+    const btn = document.getElementById('btnUploadPapers');
+    btn.disabled = true;
+    tLog('─────────────────────────────────────────', 'dim');
+    tLog('UPLOADING PAPERS', 'sys');
+    tLog('─────────────────────────────────────────', 'dim');
+    tLoader('Uploading papers…');
+    setProgress(10);
+
+    const form = new FormData();
+    for (let f of files) form.append('files', f);
+
+    try {
+        const res = await fetch('/upload-papers', { method: 'POST', body: form });
+        const data = await res.json();
+        tRemoveLoader();
+
+        if (!res.ok || data.success === false) {
+
+            tRemoveLoader();
+            setProgress(0);
+
+            tLog('─────────────────────────────────────────', 'dim');
+            tLog('UPLOAD FAILED', 'err');
+
+            if (data.stage === "SUBJECT_GATE" && data.invalid) {
+
+                tLog('Subject mismatch detected', 'warn');
+
+                data.invalid.forEach(p => {
+                    tLog(`✗ ${p.file_name}`, 'err');
+                    if (p.detected_code)
+                        tLog(`   Detected: ${p.detected_code}`, 'warn');
+                });
+
+                tLog(`Expected syllabus code: ${data.syllabus_code}`, 'info');
+
+                const invalidNames = data.invalid.map(p => p.file_name).join(', ');
+
+                setMessage(
+                    'papersMsg',
+                    `✗ ${invalidNames} do not match syllabus code ${data.syllabus_code}.`,
+                    'err'
+                );
+
+            } else {
+
+                tLog(`Stage: ${data.stage || 'UNKNOWN'}`, 'warn');
+                tLog(data.error || 'Upload failed.', 'err');
+
+                setMessage('papersMsg',
+                    `✗ ${data.error || 'Upload failed.'}`,
+                    'err'
+                );
+            }
+
+            document.getElementById('papersStatus').classList.add('err');
+            document.getElementById('papersStatus').textContent = '✗ Validation failed';
+
+            btn.disabled = false;
+            return;
+        }
+
+        tLog(`${files.length} paper(s) received`, 'ok');
+        setProgress(25);
+        tLoader('Running OCR on scanned PDFs…');
+        await delay(800);
+        tRemoveLoader();
+        tLog('OCR complete', 'ok');
+        setProgress(50);
+        tLoader('Validating course code against syllabus…');
+        await delay(600);
+        tRemoveLoader();
+
+        const fileNames = Array.from(files).map(f => f.name);
+        
+        if (data.success === false) {
+
+            tLog(`Stage: ${data.stage}`, 'warn');
+            tLog(data.error || 'Upload failed', 'err');
+
+            setMessage('papersMsg', `✗ ${data.error}`, 'err');
+
+            document.getElementById('papersStatus').classList.add('err');
+            document.getElementById('papersStatus').textContent = '✗ Upload failed';
+
+            btn.disabled = false;
+            return;
+        }
+        
+        if (data.valid) {
+            setProgress(70);
+            fileNames.forEach(n => tLog(`${n}  →  valid`, 'ok'));
+            tLog('Subject gate passed — all papers match the syllabus', 'ok');
+            setProgress(80);
+
+            renderFileChips('papersFileList', files, fileNames);
+            document.getElementById('papersStatus').textContent = `✓ ${files.length} papers validated`;
+            document.getElementById('papersStatus').classList.add('ok');
+            setMessage('papersMsg', `✓ All ${files.length} papers validated successfully.`, 'ok');
+
+            // Show modules panel — hidden until validation passes
+            unlockPanel('panelModules', true);
+            document.getElementById('modulesStatus').textContent = 'Ready — select range';
+
+            // Analyse button stays hidden until user picks a module range
+            setStep(3);
+
+        } else {
+            const invalidNames = (data.invalid || []).map(p => p.file_name);
+            const validNames = fileNames.filter(n => !invalidNames.includes(n));
+
+            renderFileChips('papersFileList', files, validNames);
+            invalidNames.forEach(n => tLog(`${n}  →  invalid`, 'err'));
+            validNames.forEach(n => tLog(`${n}  →  valid`, 'ok'));
+            tLog('Upload failed — remove invalid papers and try again', 'err');
+
+            setMessage('papersMsg', `✗ Some papers did not match the course code. Remove invalid files and try again.`, 'err');
+            document.getElementById('papersStatus').classList.add('err');
+            document.getElementById('papersStatus').textContent = '✗ Validation failed';
+            btn.disabled = false;
+        }
+
+    } catch(e) {
+        tRemoveLoader();
+        tLog('Network error: ' + e.message, 'err');
+        setMessage('papersMsg', '✗ Network error.', 'err');
+        btn.disabled = false;
+    }
+}
+
+/* =========================================
+   POPULATE MODULES
+========================================= */
+function populateModules(mods) {
+    const start = document.getElementById('startModule');
+    const end = document.getElementById('endModule');
+    start.innerHTML = '';
+    end.innerHTML = '';
+    mods.forEach(m => {
+        start.innerHTML += `<option value="${m}">Module ${m}</option>`;
+        end.innerHTML += `<option value="${m}">Module ${m}</option>`;
+    });
+    if (mods.length > 0) end.value = mods[mods.length - 1];
+    start.addEventListener('change', confirmModuleRange);
+    end.addEventListener('change', confirmModuleRange);
+}
+
+function confirmModuleRange() {
+    const s = document.getElementById('startModule').value;
+    const e = document.getElementById('endModule').value;
+    setMessage('modulesMsg', `→ Analysing modules ${s} through ${e}`, 'info');
+    tLog(`Module range set: ${s} → ${e}`, 'info');
+    setStep(4);
+
+    // Reveal the analyse button on first module selection
+    const analyzeSection = document.getElementById('analyzeSection');
+    if (analyzeSection.style.display === 'none' || analyzeSection.style.display === '') {
+        analyzeSection.style.display = 'flex';
+        analyzeSection.style.opacity = '0';
+        setTimeout(() => { analyzeSection.style.transition = 'opacity 0.5s ease'; analyzeSection.style.opacity = '1'; }, 50);
+    }
+}
+
+/* =========================================
+   ROTATING QUOTES (analysis overlay)
+========================================= */
+const examQuotes = [
+    "\"The exam doesn't test what you know. It tests how well you panicked and still wrote something.\"",
+    "\"Coffee + PYQs = the only syllabus that actually matters before exams.\"",
+    "\"Studying smart > studying hard. You're literally doing it right now.\"",
+    "\"The brain is a muscle. Unfortunately, it also cramps at 2 AM before exams.\"",
+    "\"Fun fact: cramming the night before has a 0% success rate and a 100% vibe rate.\"",
+    "\"Past papers are basically the examiner leaving breadcrumbs. We found the whole loaf.\"",
+    "\"Revision tip: if you've read it thrice and still don't get it, it's definitely coming.\"",
+    "\"Your future self — the one who passed — is out there cheering you on right now.\"",
+    "\"The syllabus is a suggestion. The PYQs are the truth. Trust the data.\"",
+    "\"Every question in this analysis was once an examiner's 3 AM 'aha' moment. Now it's yours.\"",
+    "\"You've uploaded the papers. You ran the analysis. You're basically a walking answer key now.\"",
+    "\"Stress is just excitement that forgot to breathe. Breathe.\"",
+    "\"The only difference between a good exam and a bad exam is preparation and a working pen.\"",
+    "\"We've crunched all the PYQs so you don't have to. Go drink some water.\"",
+    "\"Toppers don't study everything. They study the right things. Hello, that's what we're doing.\"",
+    "\"If the examiner has asked it once, they'll ask it again. That's not a theory — it's a pattern.\"",
+    "\"Sleep is not the enemy of studying. Sleep deprivation is. Rest now, recall later.\"",
+    "\"You didn't come this far to only come this far. Keep going.\"",
+    "\"The universe is indifferent. The PYQ pattern is not. Trust the pattern.\"",
+    "\"Every great student was once staring at a blank page wondering where to start. You just started.\"",
+    "\"Plot twist: the 'easy' questions on the paper are the ones nobody studied because they seemed too simple.\"",
+    "\"Nervousness before an exam means you care. Caring is half the battle.\"",
+    "\"Your notes say 'this is important'. The PYQ says it appeared 4 times. Both are right. Study it.\"",
+    "\"The exam hall is not where preparation happens. You're doing that right now.\"",
+    "\"Treat every PYQ like a personal letter from your examiner. They're literally telling you what they like.\"",
+    "\"There are no shortcuts to any place worth going. But there are smarter routes. This is one.\"",
+    "\"An apple a day keeps the doctor away. A PYQ a day keeps the supplementary exam away.\"",
+    "\"Confidence in the exam hall is built right here, right now, with data like this.\"",
+    "\"The night before the exam you'll be glad you did this. Future you sends their regards.\"",
+    "\"They say luck favours the prepared. Let's make sure you're so prepared, luck takes a day off.\"",
+];
+
+let quoteInterval = null;
+let quoteIdx = 0;
+
+function startQuoteRotation() {
+    const el = document.getElementById('analysisQuote');
+    if (!el) return;
+    quoteIdx = Math.floor(Math.random() * examQuotes.length);
+    el.style.opacity = '1';
+    el.textContent = examQuotes[quoteIdx];
+
+    quoteInterval = setInterval(() => {
+        el.style.opacity = '0';
+        setTimeout(() => {
+            quoteIdx = (quoteIdx + 1) % examQuotes.length;
+            el.textContent = examQuotes[quoteIdx];
+            el.style.opacity = '1';
+        }, 600);
+    }, 10000);
+}
+
+function stopQuoteRotation() {
+    if (quoteInterval) { clearInterval(quoteInterval); quoteInterval = null; }
+    const el = document.getElementById('analysisQuote');
+    if (el) { el.style.opacity = '0'; el.textContent = ''; }
+}
+
+/* =========================================
+   RUN ANALYSIS
+========================================= */
+async function runAnalysis() {
+    const start = document.getElementById('startModule').value;
+    const end = document.getElementById('endModule').value;
+
+    const btn = document.getElementById('btnAnalyze');
+    btn.disabled = true;
+
+    setStep(4);
+    tLog('─────────────────────────────────────────', 'dim');
+    tLog('RUNNING ANALYSIS', 'sys');
+    tLog('─────────────────────────────────────────', 'dim');
+    tLog(`Initiating analysis for modules ${start}–${end}`, 'sys');
+    setProgress(5);
+    randomWitty();
+
+    document.getElementById('analysisOverlay').classList.add('visible');
+    startQuoteRotation();
+
+    try {
+        const res = await fetch(`/run-analysis?start_module=${start}&end_module=${end}`, { method: 'POST' });
+        const data = await res.json();
+        currentJob = data.job_id;
+        tLog(`Job dispatched  →  ${currentJob.slice(0,8)}…`, 'info');
+        pollJob();
+    } catch(e) {
+        tLog('Failed to start analysis: ' + e.message, 'err');
+        btn.disabled = false;
+        document.getElementById('analysisOverlay').classList.remove('visible');
+    }
+}
+
+function stopAndReset() {
+    // Stop any running poll
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = null;
+    currentJob = null;
+
+    // Terminal: log the stop, then hide after a beat
+    tLog('─────────────────────────────────────────', 'dim');
+    tLog('Process stopped by user — resetting…', 'warn');
+    tLog('─────────────────────────────────────────', 'dim');
+
+    setTimeout(() => {
+        // ── Clear terminal ──
+        tClear();
+        tLog('System reset', 'sys');
+        tLog('Awaiting user input…', 'dim');
+        hideTerminal();
+
+        // ── Reset all UI panels ──
+
+        // Step 1 — Syllabus panel
+        document.getElementById('syllabusInput').value = '';
+        document.getElementById('syllabusSelectedRow').style.display = 'none';
+        document.getElementById('syllabusMsg').innerHTML = '';
+        document.getElementById('syllabusStatus').textContent = 'Awaiting upload';
+        document.getElementById('syllabusStatus').className = 'panel-status';
+        document.getElementById('btnUploadSyllabus').disabled = false;
+
+        // Step 2 — Papers panel: re-lock
+        const panelPapers = document.getElementById('panelPapers');
+        panelPapers.classList.add('dimmed');
+        document.getElementById('papersInput').value = '';
+        document.getElementById('papersFileList').innerHTML = '';
+        document.getElementById('papersMsg').innerHTML = '';
+        document.getElementById('papersStatus').textContent = 'Locked — Complete Step 01 first';
+        document.getElementById('papersStatus').className = 'panel-status';
+        document.getElementById('btnUploadPapers').disabled = false;
+
+        // Step 3 — Modules panel: hide + re-lock
+        const panelModules = document.getElementById('panelModules');
+        panelModules.style.display = 'none';
+        panelModules.classList.add('dimmed');
+        document.getElementById('modulesMsg').innerHTML = '';
+
+        // Analyse button: hide
+        const analyzeSection = document.getElementById('analyzeSection');
+        analyzeSection.style.display = 'none';
+        analyzeSection.style.opacity = '0';
+        document.getElementById('btnAnalyze').disabled = false;
+
+        // Analysis overlay: hide
+        stopQuoteRotation();
+        document.getElementById('analysisOverlay').classList.remove('visible');
+
+        // Dashboard: hide and wipe
+        const dash = document.getElementById('dashboard');
+        dash.classList.remove('visible');
+        dash.style.display = 'none';
+        dash.style.opacity = '0';
+        document.getElementById('importanceGrid').innerHTML = '';
+        document.getElementById('frequencyGrid').innerHTML = '';
+        document.getElementById('canonicalContainer').innerHTML = '';
+        document.getElementById('gradingGrid').innerHTML = '';
+        document.getElementById('styleContainer').innerHTML = '';
+
+        // Progress bar
+        setProgress(0);
+
+        // Workflow indicator back to step 1
+        setStep(1);
+
+        // Scroll back to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Clean up intermediate files silently
+        fetch('/cleanup', { method: 'POST' }).catch(() => {});
+
+    }, 800);
+}
+
+/* =========================================
+   POLL JOB
+========================================= */
+async function pollJob() {
+    let lastLogCount = 0;
+
+    pollInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`/job-status/${currentJob}`);
+            const job = await res.json();
+
+            const logs = job.logs || [];
+            logs.slice(lastLogCount).forEach(l => tLog(l, 'info'));
+            lastLogCount = logs.length;
+
+            const pct = Math.min(5 + logs.length * 12, 90);
+            setProgress(pct);
+
+            if (job.status === 'completed') {
+                clearInterval(pollInterval);
+                setProgress(100);
+                tLog('Analysis complete', 'ok');
+                tLog('Rendering dashboard…', 'sys');
+
+                await delay(600);
+                stopQuoteRotation();
+                document.getElementById('analysisOverlay').classList.remove('visible');
+                renderDashboard(job.result);
+                setStep(5);
+
+                // Show dashboard-ready message in terminal
+                await delay(400);
+                tLog('─────────────────────────────────────────', 'dim');
+                tLog('Dashboard Ready', 'ok');
+                tLog('All the best for your exams!!', 'ok');
+                tLog('─────────────────────────────────────────', 'dim');
+
+                // Silently clean up intermediate files (keep enriched syllabus)
+                try {
+                    await fetch('/cleanup', { method: 'POST' });
+                    tLog('Intermediate files cleared for next run', 'dim');
+                } catch(_) { /* non-fatal */ }
+
+                showTerminal();
+            }
+
+            if (job.status === 'error') {
+                clearInterval(pollInterval);
+                stopQuoteRotation();
+                tLog('Error: ' + (logs[logs.length - 1] || 'Unknown'), 'err');
+                document.getElementById('btnAnalyze').disabled = false;
+                document.getElementById('analysisOverlay').classList.remove('visible');
+            }
+
+        } catch(e) {
+            tLog('Poll error: ' + e.message, 'err');
+        }
+    }, 2000);
+}
+
+/* =========================================
+   RENDER DASHBOARD
+========================================= */
+function renderDashboard(data) {
+    const dash = document.getElementById('dashboard');
+    dash.style.display = 'block';
+    requestAnimationFrame(() => {
+        dash.classList.add('visible');
+        dash.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    renderImportance(data.importance);
+    renderFrequency(data.importance);
+    renderCanonical(data.canonical);
+    renderGrading(data.grading);
+    renderStyle(data.style);
+}
+
+/* === Q1: IMPORTANCE === */
+function renderImportance(importance) {
+    const grid = document.getElementById('importanceGrid');
+    grid.innerHTML = '';
+    let d = 0;
+
+    for (let mod in importance) {
+        const topics = [...importance[mod]].sort((a,b) => b.importance_score - a.importance_score);
+        const card = document.createElement('div');
+        card.className = 'importance-card';
+        card.innerHTML = `
+            <div class="card-module-label">Module ${mod}</div>
+            ${topics.map((t, i) => `
+                <div class="topic-row">
+                    <div class="topic-row-header">
+                        <span class="topic-name"><span class="topic-rank">${i+1}</span>${t.topic}</span>
+                        <span class="topic-meta">${t.frequency}× &nbsp;·&nbsp; ${t.total_marks.toFixed(1)} marks</span>
+                    </div>
+                    <div class="topic-bar-outer">
+                        <div class="topic-bar-inner" data-width="${(t.importance_score*100).toFixed(1)}"></div>
+                    </div>
+                </div>
+            `).join('')}
+        `;
+        grid.appendChild(card);
+        setTimeout(() => {
+            card.classList.add('revealed');
+            card.querySelectorAll('.topic-bar-inner').forEach(bar => { bar.style.width = bar.dataset.width + '%'; });
+        }, d);
+        d += 100;
+    }
+}
+
+/* === Q2: FREQUENCY === */
+function renderFrequency(importance) {
+    const grid = document.getElementById('frequencyGrid');
+    grid.innerHTML = '';
+    let d = 0;
+
+    for (let mod in importance) {
+        const topics = [...importance[mod]].sort((a,b) => b.frequency - a.frequency);
+        const card = document.createElement('div');
+        card.className = 'freq-card';
+        card.innerHTML = `
+            <div class="card-module-label">Module ${mod}</div>
+            ${topics.map(t => `
+                <div class="freq-row">
+                    <span class="freq-topic">${t.topic}</span>
+                    <span class="freq-count">${t.frequency}</span>
+                </div>
+            `).join('')}
+        `;
+        grid.appendChild(card);
+        setTimeout(() => card.classList.add('revealed'), d);
+        d += 80;
+    }
+}
+
+/* === Q3: CANONICAL === */
+function renderCanonical(canonical) {
+    const container = document.getElementById('canonicalContainer');
+    container.innerHTML = '';
+    let d = 0;
+
+    for (let topic in canonical) {
+        const qs = canonical[topic];
+        const card = document.createElement('div');
+        card.className = 'canonical-card';
+        card.innerHTML = `
+            <div class="canonical-topic">${topic}</div>
+            ${qs.map(c => `
+                <div>
+                    <div class="canonical-q">${c.canonical_question}</div>
+                    <div class="canonical-meta">
+                        <span class="canonical-count">Asked ${c.occurrences} times</span>
+                        ${c.references.map(r => `<span class="canonical-ref">${r}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('<hr style="border:none;border-top:1px solid #1A1A1A;margin:20px 0;">')}
+        `;
+        container.appendChild(card);
+        setTimeout(() => card.classList.add('revealed'), d);
+        d += 100;
+    }
+}
+
+/* === Q4: GRADING === */
+function renderGrading(grading) {
+    const grid = document.getElementById('gradingGrid');
+    grid.innerHTML = '';
+    const COLORS = ['#C9A84C','#60A5FA','#A78BFA','#F472B6','#34D399','#FB923C','#818CF8','#67E8F9'];
+
+    const combinedCard = document.createElement('div');
+    combinedCard.className = 'chart-card full-width';
+    combinedCard.innerHTML = `<div class="chart-card-title">Combined Average — All Papers</div><div class="chart-wrap"><canvas id="combinedGradingPie"></canvas></div>`;
+    grid.appendChild(combinedCard);
+    setTimeout(() => combinedCard.classList.add('revealed'), 100);
+
+    const paperKeys = Object.keys(grading.per_paper_distribution);
+    paperKeys.forEach((paper, idx) => {
+        const canvasId = `grading_paper_${idx}`;
+        const card = document.createElement('div');
+        card.className = 'chart-card';
+        const shortName = paper.replace(/cleaned_/,'').replace(/_scanned|\.json/g,'');
+        card.innerHTML = `<div class="chart-card-title">${shortName}</div><div class="chart-wrap"><canvas id="${canvasId}"></canvas></div>`;
+        grid.appendChild(card);
+        setTimeout(() => card.classList.add('revealed'), 200 + idx * 100);
+    });
+
+    setTimeout(() => {
+        const combined = grading.combined_average_distribution;
+        new Chart(document.getElementById('combinedGradingPie'), {
+            type: 'pie',
+            data: {
+                labels: Object.keys(combined).map(m => `Module ${m}`),
+                datasets: [{ data: Object.values(combined), backgroundColor: COLORS, borderColor: '#080808', borderWidth: 4 }]
+            },
+            options: chartOpts()
+        });
+
+        paperKeys.forEach((paper, idx) => {
+            const d = grading.per_paper_distribution[paper];
+            new Chart(document.getElementById(`grading_paper_${idx}`), {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(d).map(m => `Module ${m}`),
+                    datasets: [{ data: Object.values(d), backgroundColor: COLORS, borderColor: '#080808', borderWidth: 4 }]
+                },
+                options: chartOpts()
+            });
+        });
+    }, 400);
+}
+
+function chartOpts() {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { color: '#A09880', font: { family: "'JetBrains Mono', monospace", size: 10 }, padding: 16, boxWidth: 12 }
+            },
+            tooltip: {
+                backgroundColor: '#0F0F0F', borderColor: '#2A2820', borderWidth: 1,
+                titleColor: '#C9A84C', bodyColor: '#F5F0E8',
+                titleFont: { family: "'Space Mono', monospace", size: 10 },
+                bodyFont: { family: "'Space Mono', monospace", size: 10 },
+                callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)}%` }
+            }
+        }
+    };
+}
+
+/* =========================================
+   Q5: STYLE — RICH INFOGRAPHICS
+========================================= */
+function renderStyle(style) {
+    const container = document.getElementById('styleContainer');
+    container.innerHTML = '';
+
+    const combined = style.combined_style_distribution;
+    const perPaper = style.per_paper_style_distribution;
+    const categories = ['Numerical', 'Descriptive', 'Analytical'];
+    const colors = { 'Numerical': '#C9A84C', 'Descriptive': '#60A5FA', 'Analytical': '#A78BFA' };
+    const icons = { 'Numerical': '🔢', 'Descriptive': '📝', 'Analytical': '🧠' };
+    const descs = {
+        'Numerical': 'Calculation-heavy questions. Expect formulae, step-by-step derivations, and numerical workings.',
+        'Descriptive': 'Theory and explanation-based questions. Focus on conceptual clarity and structured answers.',
+        'Analytical': 'Case studies and reasoning questions. Apply concepts to novel scenarios.'
+    };
+
+    /* ── ROW 1: Big summary stat cards ── */
+    const summaryRow = document.createElement('div');
+    summaryRow.className = 'style-summary-row';
+
+    categories.forEach((cat, i) => {
+        const val = combined[cat] || 0;
+        const card = document.createElement('div');
+        card.className = `style-summary-card ${cat.toLowerCase()}`;
+        card.innerHTML = `
+            <span class="style-summary-icon">${icons[cat]}</span>
+            <div class="style-summary-label">${cat}</div>
+            <div class="style-summary-pct">${val.toFixed(1)}<span style="font-size:20px;color:var(--white-dim)">%</span></div>
+            <div class="style-summary-desc">${descs[cat]}</div>
+        `;
+        summaryRow.appendChild(card);
+        setTimeout(() => card.classList.add('revealed'), 80 * i);
+    });
+
+    container.appendChild(summaryRow);
+
+    /* ── ROW 2: Radar chart (combined) + Doughnut chart ── */
+    const chartsRow = document.createElement('div');
+    chartsRow.className = 'style-charts-row';
+
+    // Radar
+    const radarCard = document.createElement('div');
+    radarCard.className = 'style-chart-card';
+    radarCard.innerHTML = `
+        <div class="style-chart-title">Style Profile — Combined Radar</div>
+        <div class="style-chart-canvas-wrap"><canvas id="styleRadarCanvas"></canvas></div>
+    `;
+    chartsRow.appendChild(radarCard);
+    setTimeout(() => radarCard.classList.add('revealed'), 200);
+
+    // Doughnut
+    const doughnutCard = document.createElement('div');
+    doughnutCard.className = 'style-chart-card';
+    doughnutCard.innerHTML = `
+        <div class="style-chart-title">Combined Distribution — Doughnut</div>
+        <div class="style-chart-canvas-wrap"><canvas id="styleDoughnutCanvas"></canvas></div>
+    `;
+    chartsRow.appendChild(doughnutCard);
+    setTimeout(() => doughnutCard.classList.add('revealed'), 300);
+
+    container.appendChild(chartsRow);
+
+    /* ── ROW 3: Per-paper stacked horizontal bars ── */
+    const breakdownCard = document.createElement('div');
+    breakdownCard.className = 'style-paper-breakdown';
+    breakdownCard.innerHTML = `<div class="style-paper-title">Per-Paper Style Breakdown</div>` +
+        Object.entries(perPaper).map(([paper, dist], pidx) => {
+            const shortName = paper.replace(/cleaned_/,'').replace(/_scanned|\.json/g,'');
+            const segs = categories.map(cat => {
+                const v = dist[cat] || 0;
+                return `<div class="stacked-seg ${cat.toLowerCase()}" data-width="${v}" style="width:0%">${v > 8 ? v.toFixed(0)+'%' : ''}</div>`;
+            }).join('');
+            return `
+                <div class="paper-style-row">
+                    <div class="paper-style-name">
+                        <span>${shortName}</span>
+                        <span style="font-size:9px;opacity:0.5">${categories.map(c => `${c}: ${(dist[c]||0).toFixed(1)}%`).join(' · ')}</span>
+                    </div>
+                    <div class="stacked-bar" id="stacked_${pidx}">${segs}</div>
+                </div>
+            `;
+        }).join('') +
+        `<div class="stacked-legend">
+            ${categories.map(cat => `
+                <div class="stacked-legend-item">
+                    <div class="legend-dot" style="background:${colors[cat]}"></div>
+                    ${cat}
+                </div>
+            `).join('')}
+        </div>`;
+
+    container.appendChild(breakdownCard);
+    setTimeout(() => breakdownCard.classList.add('revealed'), 400);
+
+    /* ── ROW 4: Insight callouts ── */
+    const dominantCat = categories.reduce((a, b) => (combined[a]||0) > (combined[b]||0) ? a : b);
+    const rarest = categories.reduce((a, b) => (combined[a]||0) < (combined[b]||0) ? a : b);
+    const paperCount = Object.keys(perPaper).length;
+
+    const insightsRow = document.createElement('div');
+    insightsRow.className = 'style-insights-row';
+    insightsRow.innerHTML = `
+        <div class="insight-card">
+            <span class="insight-icon">🎯</span>
+            <div class="insight-label">Dominant Style</div>
+            <div class="insight-text"><strong style="color:${colors[dominantCat]}">${dominantCat}</strong> questions make up <strong>${(combined[dominantCat]||0).toFixed(1)}%</strong> of all papers. This should define your primary preparation approach.</div>
+        </div>
+        <div class="insight-card">
+            <span class="insight-icon">📊</span>
+            <div class="insight-label">Papers Analysed</div>
+            <div class="insight-text">Style patterns computed from <strong style="color:var(--gold)">${paperCount} question paper${paperCount !== 1 ? 's' : ''}</strong>. Higher the paper count, more reliable the distribution signal.</div>
+        </div>
+        <div class="insight-card">
+            <span class="insight-icon">💡</span>
+            <div class="insight-label">Least Asked</div>
+            <div class="insight-text"><strong style="color:${colors[rarest]}">${rarest}</strong> questions are least frequent at <strong>${(combined[rarest]||0).toFixed(1)}%</strong>. Do not skip — even low-frequency types carry marks.</div>
+        </div>
+    `;
+
+    [0,1,2].forEach(i => {
+        setTimeout(() => insightsRow.children[i].classList.add('revealed'), 500 + i * 80);
+    });
+
+    container.appendChild(insightsRow);
+
+    /* ── Render Charts after DOM ready ── */
+    setTimeout(() => {
+        const radarValues = categories.map(c => combined[c] || 0);
+        new Chart(document.getElementById('styleRadarCanvas'), {
+            type: 'radar',
+            data: {
+                labels: categories,
+                datasets: [{
+                    data: radarValues,
+                    backgroundColor: 'rgba(201,168,76,0.15)',
+                    borderColor: '#C9A84C',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#C9A84C',
+                    pointBorderColor: '#080808',
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0, max: 100,
+                        ticks: {
+                            stepSize: 25,
+                            color: '#444',
+                            font: { family: "'JetBrains Mono', monospace", size: 9 },
+                            backdropColor: 'transparent'
+                        },
+                        grid: { color: '#1F1E1A' },
+                        angleLines: { color: '#1F1E1A' },
+                        pointLabels: {
+                            color: '#A09880',
+                            font: { family: "'Space Mono', monospace", size: 10 }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0F0F0F', borderColor: '#2A2820', borderWidth: 1,
+                        titleColor: '#C9A84C', bodyColor: '#F5F0E8',
+                        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw.toFixed(1)}%` }
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('styleDoughnutCanvas'), {
+            type: 'doughnut',
+            data: {
+                labels: categories,
+                datasets: [{
+                    data: categories.map(c => combined[c] || 0),
+                    backgroundColor: ['#C9A84C', '#60A5FA', '#A78BFA'],
+                    borderColor: '#080808',
+                    borderWidth: 4,
+                    hoverBorderColor: '#1F1E1A'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#A09880', font: { family: "'JetBrains Mono', monospace", size: 10 }, padding: 16, boxWidth: 12 }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0F0F0F', borderColor: '#2A2820', borderWidth: 1,
+                        titleColor: '#C9A84C', bodyColor: '#F5F0E8',
+                        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)}%` }
+                    }
+                }
+            }
+        });
+
+        /* Animate stacked bars */
+        Object.keys(perPaper).forEach((paper, pidx) => {
+            const dist = perPaper[paper];
+            const bar = document.getElementById(`stacked_${pidx}`);
+            if (!bar) return;
+            bar.querySelectorAll('.stacked-seg').forEach(seg => {
+                const w = parseFloat(seg.dataset.width);
+                setTimeout(() => { seg.style.width = w + '%'; }, 50 * pidx);
+            });
+        });
+
+    }, 600);
+}
+
+/* =========================================
+   HELPERS
+========================================= */
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Init terminal logs
+
+tLog('System initialised', 'sys');
+tLog('Awaiting user input…', 'dim');
+</script>
+</body>
+</html>

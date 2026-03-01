@@ -1,0 +1,169 @@
+{
+  "course_code": "BHUM107L",
+  "course_title": "Sustainability and Society",
+  "modules": [
+    {
+      "module_id": 1,
+      "module_name": "Understanding Social Sustainability",
+      "main_topics": [
+        {
+          "main_topic": "Concept and Context of Sustainability",
+          "sub_topics": [
+            "Definition, Brief History",
+            "Sustainable Development in India, 17 SDGs",
+            "Importance and Challenges"
+          ],
+          "desc": "Understanding the fundamental principles and historical evolution of sustainability with a focus on its application in India."
+        }
+      ]
+    },
+    {
+      "module_id": 2,
+      "module_name": "Education",
+      "main_topics": [
+        {
+          "main_topic": "Role and Importance of Education in Sustainable Development",
+          "sub_topics": [],
+          "desc": "Understand the role of education in promoting sustainable development goals."
+        },
+        {
+          "main_topic": "Education for Climate Action",
+          "sub_topics": [],
+          "desc": "Explore how education can drive climate action and sustainability practices."
+        },
+        {
+          "main_topic": "Education and Media for Sustainable Societies",
+          "sub_topics": [],
+          "desc": "Analyze the impact of media in shaping sustainable societies through educational content."
+        }
+      ]
+    },
+    {
+      "module_id": 3,
+      "module_name": "Labor Force and Reforms",
+      "main_topics": [
+        {
+          "main_topic": "Green Tribunals",
+          "sub_topics": [],
+          "desc": "Examine the role and functioning of green tribunals in environmental disputes."
+        },
+        {
+          "main_topic": "Green Economy",
+          "sub_topics": [],
+          "desc": "Analyze the transition to a sustainable economic model focusing on environmental conservation."
+        },
+        {
+          "main_topic": "Problem of Industries and Sustainability",
+          "sub_topics": [
+            "Role of Government Initiatives for Labor Welfare in India"
+          ],
+          "desc": "Explore challenges faced by industries in achieving sustainability and government support mechanisms."
+        },
+        {
+          "main_topic": "Role of Government Initiatives for Labor Welfare in India",
+          "sub_topics": [],
+          "desc": "Discuss the impact of government policies on labor welfare within the context of sustainable development."
+        }
+      ]
+    },
+    {
+      "module_id": 4,
+      "module_name": "Human Rights",
+      "main_topics": [
+        {
+          "main_topic": "Human Rights: Migrants and Refugees",
+          "sub_topics": [
+            "Human Trafficking",
+            "Children’s Rights: Prevention and Protection Measures"
+          ],
+          "desc": "Examine the rights of migrants and refugees, including legal protections and challenges."
+        }
+      ]
+    },
+    {
+      "module_id": 5,
+      "module_name": "Gender Equality",
+      "main_topics": [
+        {
+          "main_topic": "Understanding Gender Equality and Inequality",
+          "sub_topics": [
+            "Forms of Discrimination and Suppression"
+          ],
+          "desc": "Explore the concepts, definitions, and historical context of gender equality and inequality."
+        },
+        {
+          "main_topic": "Education and Employment",
+          "sub_topics": [
+            "Gendered Barriers in Education",
+            "Women's Participation in Workforce",
+            "Equal Pay and Occupational Segregation"
+          ],
+          "desc": "Analyze the role of education and employment in achieving gender equality."
+        },
+        {
+          "main_topic": "Health and Well-being",
+          "sub_topics": [
+            "Gendered Health Issues",
+            "Mental Health and Gender"
+          ],
+          "desc": "Examine health disparities and well-being issues specific to different genders."
+        },
+        {
+          "main_topic": "LGBTQ and Sustainable Development",
+          "sub_topics": [
+            "Inclusion of LGBTQ in Development Goals",
+            "Challenges Faced by LGBTQ Communities"
+          ],
+          "desc": "Investigate the intersection between LGBTQ rights and sustainable development goals."
+        }
+      ]
+    },
+    {
+      "module_id": 6,
+      "module_name": "Social Hazards",
+      "main_topics": [
+        {
+          "main_topic": "Challenges",
+          "sub_topics": [
+            "Poverty",
+            "Water Scarcity",
+            "Worldwide and in Indian Scenario",
+            "Impact of Globalization"
+          ],
+          "desc": "Overview of social challenges including poverty, water scarcity, their global and local impact."
+        },
+        {
+          "main_topic": "Rapid Urbanization and Slums – Preventive Measure to Control CO2 Emission",
+          "sub_topics": [],
+          "desc": "Analysis of urbanization impacts on slums and measures to mitigate CO2 emissions."
+        },
+        {
+          "main_topic": "Programmes and Schemes",
+          "sub_topics": [],
+          "desc": "Discussion on various programs and schemes addressing social hazards."
+        }
+      ]
+    },
+    {
+      "module_id": 7,
+      "module_name": "Integration of Indigenous Groups",
+      "main_topics": [
+        {
+          "main_topic": "Demography and Definition of Indigenous Groups",
+          "sub_topics": [],
+          "desc": "Study the demographic characteristics and legal definitions of indigenous groups."
+        },
+        {
+          "main_topic": "Understanding Indigenous Knowledge and Health Practices",
+          "sub_topics": [],
+          "desc": "Explore traditional knowledge systems and health practices among indigenous communities."
+        },
+        {
+          "main_topic": "Challenges and Opportunities for Sustainability",
+          "sub_topics": [],
+          "desc": "Examine the challenges and potential solutions for sustainable development in indigenous contexts."
+        }
+      ]
+    }
+  ]
+}
