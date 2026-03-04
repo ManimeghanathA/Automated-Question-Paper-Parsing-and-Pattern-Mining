@@ -7,7 +7,9 @@
 
 ## Demo & Results Preview
 
-![PYQ Analyser Demo](docs/demo.gif)
+<video src="docs/demo.mp4" controls="controls" width="100%">
+  Your browser does not support the video tag.
+</video>
 
 ---
 
