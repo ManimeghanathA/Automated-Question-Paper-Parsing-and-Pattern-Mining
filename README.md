@@ -7,9 +7,15 @@
 
 ## Demo & Results Preview
 
-<video src="docs/demo.mp4" controls="controls" width="100%">
-  Your browser does not support the video tag.
-</video>
+<p align="center">
+  <a href="https://youtu.be/WUUyRU3YLwc">
+    <img src="docs/demo_1.png" width="800">
+  </a>
+</p>
+
+<p align="center">
+  Click the image to watch the project demo
+</p>
 
 ---
 
