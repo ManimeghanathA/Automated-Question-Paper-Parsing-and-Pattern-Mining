@@ -7,7 +7,7 @@
 
 ## Demo & Results Preview
 
-*(Insert a GIF or screenshot of your generated analytics, charts, or web interface here to show the final output!)*
+![PYQ Analyser Demo](docs/demo.gif)
 
 ---
 
