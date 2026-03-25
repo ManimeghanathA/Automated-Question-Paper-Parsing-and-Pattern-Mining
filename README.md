@@ -1,5 +1,5 @@
 # PYQ Analyser
-**Automsted Question Paper Parsing and Pattern Mining**
+**Automated Question Paper Parsing and Pattern Mining**
 
 > PYQ Analyser converts previous year question papers into structured, syllabus-aligned insights that help students prepare smarter.
 
