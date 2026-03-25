@@ -46,7 +46,7 @@ The system analyzes multiple previous year papers and generates evidence-based e
 * **Frequently asked topics**
 * **Repeated canonical questions**
 * **Module-wise grading distribution**
-* **Question style distribution** (numerical vs. descriptive)
+* **Question style distribution** (numerical vs descriptive vs analytical)
 
 *Note: The goal is not to predict questions, but to provide evidence-based preparation guidance.*
 
