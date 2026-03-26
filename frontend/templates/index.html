@@ -2747,13 +2747,20 @@ function renderStyle(style) {
 
 /* =========================================
    PDF REPORT DOWNLOAD
+   7-page structure:
+     Page 1  — Cover
+     Page 2  — Topic Importance Rankings     (screenshot of #importanceGrid)
+     Page 3  — Frequency Analysis            (screenshot of #frequencyGrid)
+     Page 4  — Repeated Questions Detected   (screenshot of #canonicalContainer)
+     Page 5  — Grading Distribution          (screenshot of #gradingGrid)
+     Page 6  — Question Style Analysis       (screenshot of #styleContainer)
+     Page 7  — End page
 ========================================= */
 async function downloadPDFReport() {
     const btn = document.getElementById('btnDownloadPDF');
     const msg = document.getElementById('pdfProgressMsg');
     btn.disabled = true;
 
-    // ── Retrieve the live result data stored when analysis completed ──
     const data = window._lastAnalysisResult;
     if (!data) {
         msg.textContent = '✗ No analysis data found. Please run analysis first.';
@@ -2762,575 +2769,219 @@ async function downloadPDFReport() {
         return;
     }
 
+    // ── progress messages ──
     const steps = [
-        'Building report canvas…',
-        'Rendering importance section…',
-        'Rendering frequency section…',
-        'Rendering canonical questions…',
-        'Rendering grading charts…',
-        'Rendering style analysis…',
-        'Compiling PDF pages…',
-        'Saving file…'
+        'Building cover page…',
+        'Capturing Topic Importance…',
+        'Capturing Frequency Analysis…',
+        'Capturing Repeated Questions…',
+        'Capturing Grading Distribution…',
+        'Capturing Style Analysis…',
+        'Compiling PDF…',
+        'Saving…'
     ];
-    let stepIdx = 0;
-    const tick = setInterval(() => {
-        if (stepIdx < steps.length) { msg.textContent = steps[stepIdx++]; }
-    }, 1100);
+    let si = 0;
+    const tick = setInterval(() => { if (si < steps.length) msg.textContent = steps[si++]; }, 1200);
 
-    // ── Off-screen render container ──
-    // 794px = A4 at 96dpi. All layout is designed for this exact width.
-    const CANVAS_W = 794;
-    const SCALE    = 2;          // retina quality
+    // ── helpers ──
+    const GOLD_RGB  = [201, 168, 76];
+    const BLACK_RGB = [8,   8,   8];
+    const WHITE_RGB = [245, 240, 232];
+    const DIM_RGB   = [160, 152, 128];
+    const PW = 210, PH = 297;   // A4 mm
 
-    // Colours (CSS strings)
-    const C = {
-        black:    '#080808',
-        black2:   '#0F0F0F',
-        black3:   '#161616',
-        black4:   '#1E1E1E',
-        gold:     '#C9A84C',
-        goldDim:  '#8A6E2F',
-        white:    '#F5F0E8',
-        whiteDim: '#A09880',
-        blue:     '#60A5FA',
-        purple:   '#A78BFA',
-        green:    '#4ADE80',
-        pink:     '#F472B6',
-        orange:   '#FB923C',
-        border:   '#2A2820',
-    };
-
-    // PDF page sizes in mm
-    const PW = 210, PH = 297;
-
-    // Helper: create a section wrapper div inside the offscreen container
-    function makeSection(bg = C.black2) {
-        const sec = document.createElement('div');
-        sec.style.cssText = `
-            width:${CANVAS_W}px; background:${bg};
-            font-family:'Space Mono',monospace;
-            color:${C.white}; box-sizing:border-box;
-            padding:32px 40px;
-        `;
-        return sec;
+    function fr(pdf, x,y,w,h,r,g,b) { pdf.setFillColor(r,g,b); pdf.rect(x,y,w,h,'F'); }
+    function tx(pdf, t,x,y,sz,r,g,b,al='left',st='normal') {
+        pdf.setFontSize(sz); pdf.setTextColor(r,g,b);
+        pdf.setFont('helvetica',st); pdf.text(String(t),x,y,{align:al});
     }
 
-    // Helper: section header bar
-    function sectionBar(num, title, bg = '#0D0D0D') {
-        return `
-        <div style="background:${bg};border-left:3px solid ${C.gold};padding:10px 16px;margin-bottom:24px;display:flex;align-items:center;gap:14px;">
-            <span style="font-size:10px;letter-spacing:2px;color:${C.gold};font-weight:700;">${num}</span>
-            <span style="font-size:13px;letter-spacing:1px;color:${C.white};">${title}</span>
-        </div>`;
-    }
-
-    // Helper: render a section div → capture as canvas → return dataURL + height
-    async function captureSection(div) {
-        // Place off-screen so browser does a real layout + font render
-        div.style.position = 'fixed';
-        div.style.top = '0';
-        div.style.left = '-9999px';
-        div.style.zIndex = '-1';
-        document.body.appendChild(div);
-        // Wait for fonts + layout
+    // Capture a live DOM element as a JPEG dataURL, at full rendered width
+    async function captureEl(el) {
+        // Temporarily remove animations / transitions so html2canvas gets a clean frame
+        const prev = el.style.transition;
+        el.style.transition = 'none';
         await document.fonts.ready;
-        await new Promise(r => setTimeout(r, 300));
-        const canvas = await html2canvas(div, {
+        await new Promise(r => setTimeout(r, 400));   // let charts fully paint
+        const canvas = await html2canvas(el, {
             backgroundColor: '#0F0F0F',
-            scale: SCALE,
+            scale: 2,                   // retina sharpness
             useCORS: true,
             allowTaint: true,
             logging: false,
-            width: CANVAS_W,
-            windowWidth: CANVAS_W
+            scrollX: 0,
+            scrollY: -window.scrollY   // capture at natural position
         });
-        document.body.removeChild(div);
-        return {
-            imgData: canvas.toDataURL('image/jpeg', 0.95),
-            pxH: canvas.height,
-            pxW: canvas.width
-        };
+        el.style.transition = prev;
+        return { imgData: canvas.toDataURL('image/jpeg', 0.95), w: canvas.width, h: canvas.height };
     }
 
-    // Helper: place image onto PDF flowing continuously across pages
-    async function placeToPDF(pdf, imgData, pxW, pxH, curY, PW, PH, MARGIN) {
-        const CW        = PW - MARGIN * 2;
-        const mmPerPx   = CW / pxW;
-        const HEADER_H  = 18;
-        const FOOTER_H  = 6;
+    // Place one screenshot onto one full A4 page (letter-boxed with dark bg)
+    function placeFullPage(pdf, imgData, imgW, imgH) {
+        // Fill page background dark
+        fr(pdf, 0, 0, PW, PH, ...BLACK_RGB);
+        // Thin gold top bar
+        fr(pdf, 0, 0, PW, 1.5, ...GOLD_RGB);
+        // Thin gold bottom bar
+        fr(pdf, 0, PH-1.5, PW, 1.5, ...GOLD_RGB);
 
-        const img = new Image();
-        img.src = imgData;
-        await new Promise(r => { img.onload = r; });
+        const MARGIN = 10;
+        const HEADER = 14;  // mm reserved for page header strip
+        const FOOTER = 8;
+        const availW = PW - MARGIN * 2;
+        const availH = PH - HEADER - FOOTER - MARGIN;
 
-        let srcY  = 0;
-        let destY = curY;
-
-        while (srcY < pxH) {
-            const availMm = PH - destY - FOOTER_H;
-            const availPx = availMm / mmPerPx;
-            const slicePx = Math.min(availPx, pxH - srcY);
-            const sliceMm = slicePx * mmPerPx;
-
-            if (slicePx > 0) {
-                const tempC = document.createElement('canvas');
-                tempC.width  = pxW;
-                tempC.height = Math.ceil(slicePx);
-                tempC.getContext('2d').drawImage(img, 0, srcY, pxW, slicePx, 0, 0, pxW, slicePx);
-                pdf.addImage(tempC.toDataURL('image/jpeg', 0.95), 'JPEG', MARGIN, destY, CW, sliceMm);
-                srcY  += slicePx;
-                destY += sliceMm;
-            }
-
-            if (srcY < pxH) {
-                pdf.addPage();
-                addPageHeader(pdf, PW, PH);
-                destY = HEADER_H + 4;
-            }
+        // Scale image to fit available area, preserving aspect ratio
+        const ratio   = imgW / imgH;
+        const availR  = availW / availH;
+        let drawW, drawH;
+        if (ratio > availR) {
+            // wider than available → constrain by width
+            drawW = availW;
+            drawH = availW / ratio;
+        } else {
+            // taller → constrain by height
+            drawH = availH;
+            drawW = availH * ratio;
         }
-        return destY;
+
+        const offX = MARGIN + (availW - drawW) / 2;
+        const offY = HEADER + (availH - drawH) / 2;
+
+        pdf.addImage(imgData, 'JPEG', offX, offY, drawW, drawH);
     }
 
-    // Helper: page header (used on every content page)
-    const GOLD_RGB   = [201, 168, 76];
-    const BLACK_RGB  = [8,   8,   8];
-    const WHITE_RGB  = [245, 240, 232];
-    const DIM_RGB    = [160, 152, 128];
-
-    function addPageHeader(pdf, PW, PH) {
-        pdf.setFillColor(...BLACK_RGB);
-        pdf.rect(0, 0, PW, 16, 'F');
-        pdf.setFillColor(...GOLD_RGB);
-        pdf.rect(0, 0, PW, 1, 'F');
-        pdf.setFontSize(7);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(...GOLD_RGB);
-        pdf.text('PYQ ANALYSER', 14, 10);
-        pdf.setFont('helvetica', 'normal');
-        pdf.setTextColor(...DIM_RGB);
-        pdf.text(String(pdf.internal.getNumberOfPages()), PW / 2, 10, { align: 'center' });
-        pdf.setDrawColor(40, 38, 32);
-        pdf.setLineWidth(0.25);
-        pdf.line(0, 16, PW, 16);
+    // Add page number + branding strip at top
+    function pageHeader(pdf, sectionName) {
+        fr(pdf, 0, 0, PW, 12, ...BLACK_RGB);
+        fr(pdf, 0, 0, PW, 0.8, ...GOLD_RGB);
+        tx(pdf, 'PYQ ANALYSER', 10, 8, 6.5, ...GOLD_RGB, 'left', 'bold');
+        tx(pdf, String(pdf.internal.getNumberOfPages()), PW/2, 8, 6.5, ...DIM_RGB, 'center', 'normal');
+        tx(pdf, sectionName.toUpperCase(), PW-10, 8, 6.5, ...DIM_RGB, 'right', 'normal');
+        pdf.setDrawColor(40, 38, 32); pdf.setLineWidth(0.2);
+        pdf.line(0, 12, PW, 12);
     }
 
     try {
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const MARGIN = 14;
 
-        // Course info
-        const syllabusStatusEl = document.getElementById('syllabusStatus');
-        const courseInfo = syllabusStatusEl ? syllabusStatusEl.textContent.replace('✓ ', '') : 'Exam Analysis Report';
-        const now = new Date();
+        const syllabusEl  = document.getElementById('syllabusStatus');
+        const courseInfo  = syllabusEl ? syllabusEl.textContent.replace('✓ ', '') : 'Exam Analysis Report';
+        const now         = new Date();
+        const dateStr     = now.toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'});
 
-        // ==============================================================
-        // PAGE 1 — COVER (pure jsPDF drawing, no screenshot)
-        // ==============================================================
-        const fr = (x,y,w,h,r,g,b) => { pdf.setFillColor(r,g,b); pdf.rect(x,y,w,h,'F'); };
-        const tx = (t,x,y,sz,r,g,b,al='left',st='normal') => {
-            pdf.setFontSize(sz); pdf.setTextColor(r,g,b);
-            pdf.setFont('helvetica',st); pdf.text(String(t),x,y,{align:al});
-        };
+        // ════════════════════════════════════════════
+        // PAGE 1 — COVER
+        // ════════════════════════════════════════════
+        fr(pdf, 0,0,PW,PH, ...BLACK_RGB);
 
-        // Background
-        fr(0,0,PW,PH,...BLACK_RGB);
-        // Gold top bar
-        fr(0,0,PW,2,...GOLD_RGB);
-        // Right decorative panel
-        fr(PW*0.6,0,PW*0.4,PH, 18,16,12);
-        fr(PW*0.6,0,0.6,PH,...GOLD_RGB);
+        // Gold top bar (thick)
+        fr(pdf, 0,0,PW,3, ...GOLD_RGB);
+        // Gold bottom bar
+        fr(pdf, 0,PH-3,PW,3, ...GOLD_RGB);
 
-        // Eyebrow
-        tx('AUTOMATED QUESTION PAPER', MARGIN, 48, 7, ...DIM_RGB, 'left', 'normal');
-        tx('PARSING & PATTERN MINING', MARGIN, 55, 7, ...DIM_RGB, 'left', 'normal');
+        // Right accent panel — stops 10mm before bottom bar
+        fr(pdf, PW*0.62, 3, PW*0.38, PH-6, 16,14,10);
+        fr(pdf, PW*0.62, 3, 0.6, PH-6, ...GOLD_RGB);
 
-        // Big title
-        tx('PYQ', MARGIN, 96, 52, ...WHITE_RGB, 'left', 'bold');
-        tx('Analyser', MARGIN, 114, 30, ...GOLD_RGB, 'left', 'italic');
+        // Eyebrow text
+        tx(pdf, 'AUTOMATED QUESTION PAPER', 14, 44, 7, ...DIM_RGB, 'left');
+        tx(pdf, 'PARSING & PATTERN MINING', 14, 52, 7, ...DIM_RGB, 'left');
 
-        // Divider
-        pdf.setDrawColor(...GOLD_RGB); pdf.setLineWidth(0.4);
-        pdf.line(MARGIN, 124, MARGIN+90, 124);
-        tx('Evidence-Based Exam Intelligence', MARGIN, 132, 8, ...DIM_RGB, 'left', 'normal');
+        // Large title — positioned so they clear the top bar
+        tx(pdf, 'PYQ', 14, 94, 50, ...WHITE_RGB, 'left', 'bold');
+        tx(pdf, 'Analyser', 14, 112, 28, ...GOLD_RGB, 'left', 'italic');
 
-        // Course block
-        fr(MARGIN, 150, 110, 0.4, ...GOLD_RGB);
-        tx('COURSE', MARGIN, 161, 7, ...GOLD_RGB, 'left', 'bold');
-        tx(courseInfo, MARGIN, 169, 9, ...WHITE_RGB, 'left', 'normal');
+        // Horizontal rule under title
+        pdf.setDrawColor(...GOLD_RGB); pdf.setLineWidth(0.5);
+        pdf.line(14, 120, 100, 120);
 
-        // Date block
-        tx('GENERATED', MARGIN, 183, 7, ...GOLD_RGB, 'left', 'bold');
-        tx(now.toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'}), MARGIN, 191, 9, ...WHITE_RGB, 'left', 'normal');
+        tx(pdf, 'Evidence-Based Exam Intelligence', 14, 128, 8, ...DIM_RGB, 'left');
+
+        // Divider line before course block
+        pdf.setDrawColor(40,38,32); pdf.setLineWidth(0.3);
+        pdf.line(14, 145, 120, 145);
+
+        tx(pdf, 'COURSE', 14, 155, 7, ...GOLD_RGB, 'left', 'bold');
+        // Wrap long course name if needed
+        const courseLines = pdf.splitTextToSize(courseInfo, 110);
+        pdf.setFontSize(9); pdf.setTextColor(...WHITE_RGB); pdf.setFont('helvetica','normal');
+        pdf.text(courseLines, 14, 163);
+
+        const afterCourse = 163 + courseLines.length * 5;
+        tx(pdf, 'GENERATED', 14, afterCourse + 10, 7, ...GOLD_RGB, 'left', 'bold');
+        tx(pdf, dateStr, 14, afterCourse + 18, 9, ...WHITE_RGB, 'left');
 
         // Sections list
-        tx('REPORT SECTIONS', MARGIN, 208, 7, ...GOLD_RGB, 'left', 'bold');
-        ['01  Topic Importance Rankings','02  Frequency Analysis','03  Repeated Questions Detected','04  Grading Distribution','05  Question Style Analysis']
-            .forEach((s,i) => tx(s, MARGIN, 217+i*9, 8, ...DIM_RGB, 'left', 'normal'));
+        tx(pdf, 'REPORT SECTIONS', 14, afterCourse + 34, 7, ...GOLD_RGB, 'left', 'bold');
+        const sections = [
+            '01  Topic Importance Rankings',
+            '02  Frequency Analysis',
+            '03  Repeated Questions Detected',
+            '04  Grading Distribution',
+            '05  Question Style Analysis'
+        ];
+        sections.forEach((s,i) => tx(pdf, s, 14, afterCourse + 43 + i*9, 8, ...DIM_RGB, 'left'));
 
-        tx('PYQ Analyser · VIT Examination Intelligence System', PW/2, PH-10, 7, ...DIM_RGB, 'center', 'italic');
+        // Footer text — safely above gold bottom bar
+        tx(pdf, 'PYQ Analyser · VIT Examination Intelligence System', PW/2, PH-8, 7, ...DIM_RGB, 'center', 'italic');
 
-        // ==============================================================
-        // SECTION 1 — TOPIC IMPORTANCE
-        // ==============================================================
-        const importance = data.importance;
-        const impModules = Object.keys(importance);
+        // ════════════════════════════════════════════
+        // PAGES 2-6 — One section per page, full-page screenshot
+        // ════════════════════════════════════════════
+        const sections5 = [
+            { id: 'importanceGrid',     label: 'Topic Importance Rankings' },
+            { id: 'frequencyGrid',      label: 'Frequency Analysis' },
+            { id: 'canonicalContainer', label: 'Repeated Questions Detected' },
+            { id: 'gradingGrid',        label: 'Grading Distribution' },
+            { id: 'styleContainer',     label: 'Question Style Analysis' },
+        ];
 
-        pdf.addPage();
-        addPageHeader(pdf, PW, PH);
+        for (const sec of sections5) {
+            const el = document.getElementById(sec.id);
+            if (!el || el.children.length === 0) continue;
 
-        // Build one full-width section div, 2-column card grid
-        const sec1 = makeSection(C.black2);
-        sec1.innerHTML = sectionBar('01 / 05', 'Topic Importance Rankings');
+            // Scroll element into view so it's fully painted
+            el.scrollIntoView({ block: 'start' });
+            await new Promise(r => setTimeout(r, 200));
 
-        const grid1 = document.createElement('div');
-        grid1.style.cssText = `display:grid;grid-template-columns:1fr 1fr;gap:12px;`;
+            const cap = await captureEl(el);
 
-        const CHART_COLORS = [C.gold, C.blue, C.purple, C.pink, C.orange, C.green];
-
-        impModules.forEach(mod => {
-            const topics = [...importance[mod]].sort((a,b) => b.importance_score - a.importance_score);
-            const maxScore = topics[0] ? topics[0].importance_score : 1;
-            const card = document.createElement('div');
-            card.style.cssText = `background:${C.black3};border:1px solid ${C.border};border-top:2px solid ${C.gold};padding:20px;`;
-            card.innerHTML = `
-                <div style="font-size:9px;letter-spacing:3px;color:${C.goldDim};margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid ${C.border};">MODULE ${mod}</div>
-                ${topics.map((t,i) => {
-                    const barW = maxScore > 0 ? ((t.importance_score/maxScore)*100).toFixed(1) : 0;
-                    const color = CHART_COLORS[i % CHART_COLORS.length];
-                    return `
-                    <div style="margin-bottom:14px;">
-                        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;">
-                            <span style="font-size:12px;color:${C.white};font-family:'Helvetica',sans-serif;">
-                                <span style="background:${C.gold};color:${C.black};font-size:8px;padding:2px 5px;margin-right:6px;font-weight:700;">${i+1}</span>
-                                ${t.topic}
-                            </span>
-                            <span style="font-size:9px;color:${C.whiteDim};white-space:nowrap;margin-left:8px;">${t.frequency}× · ${t.total_marks.toFixed(1)}m</span>
-                        </div>
-                        <div style="height:3px;background:${C.black4};border-radius:1px;">
-                            <div style="height:100%;width:${barW}%;background:${color};border-radius:1px;"></div>
-                        </div>
-                    </div>`;
-                }).join('')}
-            `;
-            grid1.appendChild(card);
-        });
-        sec1.appendChild(grid1);
-
-        const cap1 = await captureSection(sec1);
-        let curY = await placeToPDF(pdf, cap1.imgData, cap1.pxW, cap1.pxH, 22, PW, PH, MARGIN);
-        curY += 8; // gap between sections
-
-        // ==============================================================
-        // SECTION 2 — FREQUENCY ANALYSIS
-        // ==============================================================
-        const sec2 = makeSection(C.black2);
-        sec2.innerHTML = sectionBar('02 / 05', 'Frequency Analysis');
-
-        const grid2 = document.createElement('div');
-        grid2.style.cssText = `display:grid;grid-template-columns:1fr 1fr;gap:12px;`;
-
-        impModules.forEach(mod => {
-            const topics = [...importance[mod]].sort((a,b) => b.frequency - a.frequency);
-            const maxFreq = topics[0] ? topics[0].frequency : 1;
-            const card = document.createElement('div');
-            card.style.cssText = `background:${C.black3};border:1px solid ${C.border};border-top:2px solid ${C.blue};padding:20px;`;
-            card.innerHTML = `
-                <div style="font-size:9px;letter-spacing:3px;color:${C.goldDim};margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid ${C.border};">MODULE ${mod}</div>
-                ${topics.map((t,i) => {
-                    const barW = maxFreq > 0 ? ((t.frequency/maxFreq)*100).toFixed(1) : 0;
-                    return `
-                    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1a1a1a;">
-                        <div style="flex:1;">
-                            <div style="font-size:12px;color:${C.whiteDim};font-family:Helvetica,sans-serif;margin-bottom:4px;">${t.topic}</div>
-                            <div style="height:2px;background:${C.black4};"><div style="height:100%;width:${barW}%;background:${C.blue};"></div></div>
-                        </div>
-                        <div style="font-size:22px;color:${C.gold};font-weight:700;min-width:32px;text-align:right;">${t.frequency}</div>
-                    </div>`;
-                }).join('')}
-            `;
-            grid2.appendChild(card);
-        });
-        sec2.appendChild(grid2);
-
-        const cap2 = await captureSection(sec2);
-        curY = await placeToPDF(pdf, cap2.imgData, cap2.pxW, cap2.pxH, curY, PW, PH, MARGIN);
-        curY += 8;
-
-        // ==============================================================
-        // SECTION 3 — CANONICAL / REPEATED QUESTIONS
-        // (one topic cluster per page)
-        // ==============================================================
-        const canonical = data.canonical;
-        const canonTopics = Object.keys(canonical);
-
-        for (let ci = 0; ci < canonTopics.length; ci++) {
-            const topic = canonTopics[ci];
-            const qs = canonical[topic];
-
-            const sec3 = makeSection(C.black2);
-            sec3.innerHTML = sectionBar('03 / 05', 'Repeated Questions Detected');
-
-            const topicBlock = document.createElement('div');
-            topicBlock.style.cssText = `background:${C.black3};border:1px solid ${C.border};border-left:3px solid ${C.gold};padding:24px;`;
-            topicBlock.innerHTML = `
-                <div style="font-size:9px;letter-spacing:3px;color:${C.gold};text-transform:uppercase;margin-bottom:20px;">${topic}</div>
-                ${qs.map((q, qi) => `
-                    <div style="${qi > 0 ? 'border-top:1px solid #1a1a1a;padding-top:18px;margin-top:18px;' : ''}">
-                        <div style="font-size:13px;color:${C.white};font-style:italic;line-height:1.7;padding-left:14px;border-left:1px solid ${C.border};margin-bottom:12px;font-family:Georgia,serif;">
-                            ${q.canonical_question}
-                        </div>
-                        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-                            <span style="font-size:9px;padding:4px 12px;background:rgba(201,168,76,0.12);border:1px solid ${C.goldDim};color:${C.gold};">
-                                Asked ${q.occurrences} time${q.occurrences !== 1 ? 's' : ''}
-                            </span>
-                            ${q.references.map(r => `<span style="font-size:8px;color:${C.whiteDim};padding:3px 8px;background:${C.black4};border:1px solid ${C.border};">${r}</span>`).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-            `;
-            sec3.appendChild(topicBlock);
-
-            const cap3 = await captureSection(sec3);
-            curY = await placeToPDF(pdf, cap3.imgData, cap3.pxW, cap3.pxH, curY, PW, PH, MARGIN);
-            curY += 8;
+            pdf.addPage();
+            placeFullPage(pdf, cap.imgData, cap.w, cap.h);
+            pageHeader(pdf, sec.label);
         }
 
-        // ==============================================================
-        // SECTION 4 — GRADING DISTRIBUTION
-        // Charts rendered into real Canvas elements, one per page
-        // ==============================================================
-        const grading = data.grading;
-        const gradColors = [C.gold, C.blue, C.purple, C.pink, C.orange, C.green, '#818CF8', '#67E8F9'];
-
-        // Combined average
-        const sec4a = makeSection(C.black2);
-        sec4a.innerHTML = sectionBar('04 / 05', 'Grading Distribution');
-
-        const combinedBlock = document.createElement('div');
-        combinedBlock.style.cssText = `background:${C.black3};border:1px solid ${C.border};border-top:2px solid ${C.gold};padding:28px;`;
-
-        const combinedTitle = document.createElement('div');
-        combinedTitle.style.cssText = `font-size:9px;letter-spacing:2px;color:${C.goldDim};text-align:center;margin-bottom:20px;`;
-        combinedTitle.textContent = 'COMBINED AVERAGE — ALL PAPERS';
-        combinedBlock.appendChild(combinedTitle);
-
-        // Legend + bar chart (horizontal bars, more readable than pie in PDF)
-        const combined = grading.combined_average_distribution;
-        const combKeys = Object.keys(combined);
-        const combMax = Math.max(...combKeys.map(k => combined[k]));
-
-        const barChart = document.createElement('div');
-        barChart.style.cssText = `padding:0 20px;`;
-        barChart.innerHTML = combKeys.map((k, i) => `
-            <div style="margin-bottom:14px;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                    <span style="font-size:11px;color:${C.whiteDim};">Module ${k}</span>
-                    <span style="font-size:11px;color:${C.gold};font-weight:700;">${combined[k].toFixed(1)}%</span>
-                </div>
-                <div style="height:16px;background:${C.black4};border-radius:2px;">
-                    <div style="height:100%;width:${combined[k].toFixed(1)}%;background:${gradColors[i%gradColors.length]};border-radius:2px;
-                         display:flex;align-items:center;padding-left:6px;">
-                        ${combined[k] > 8 ? `<span style="font-size:8px;color:${C.black};font-weight:700;">${combined[k].toFixed(0)}%</span>` : ''}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        combinedBlock.appendChild(barChart);
-        sec4a.appendChild(combinedBlock);
-
-        const cap4a = await captureSection(sec4a);
-        curY = await placeToPDF(pdf, cap4a.imgData, cap4a.pxW, cap4a.pxH, curY, PW, PH, MARGIN);
-        curY += 8;
-
-        // Per-paper pages — 2 papers per page
-        const paperKeys = Object.keys(grading.per_paper_distribution);
-        for (let pi = 0; pi < paperKeys.length; pi += 2) {
-            const sec4b = makeSection(C.black2);
-            sec4b.innerHTML = sectionBar('04 / 05', 'Grading Distribution — Per Paper');
-
-            const paperGrid = document.createElement('div');
-            paperGrid.style.cssText = `display:grid;grid-template-columns:1fr 1fr;gap:12px;`;
-
-            for (let pj = pi; pj < Math.min(pi+2, paperKeys.length); pj++) {
-                const paper = paperKeys[pj];
-                const dist = grading.per_paper_distribution[paper];
-                const shortName = paper.replace(/cleaned_/,'').replace(/_scanned|\.json/g,'');
-                const pKeys = Object.keys(dist);
-                const pMax = Math.max(...pKeys.map(k => dist[k]));
-
-                const pCard = document.createElement('div');
-                pCard.style.cssText = `background:${C.black3};border:1px solid ${C.border};border-top:2px solid ${C.blue};padding:20px;`;
-                pCard.innerHTML = `
-                    <div style="font-size:9px;color:${C.whiteDim};margin-bottom:16px;word-break:break-all;">${shortName}</div>
-                    ${pKeys.map((k,i) => `
-                        <div style="margin-bottom:12px;">
-                            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                                <span style="font-size:10px;color:${C.whiteDim};">Module ${k}</span>
-                                <span style="font-size:10px;color:${gradColors[i%gradColors.length]};font-weight:700;">${dist[k].toFixed(1)}%</span>
-                            </div>
-                            <div style="height:12px;background:${C.black4};border-radius:1px;">
-                                <div style="height:100%;width:${dist[k].toFixed(1)}%;background:${gradColors[i%gradColors.length]};border-radius:1px;"></div>
-                            </div>
-                        </div>
-                    `).join('')}
-                `;
-                paperGrid.appendChild(pCard);
-            }
-            sec4b.appendChild(paperGrid);
-
-            const cap4b = await captureSection(sec4b);
-            curY = await placeToPDF(pdf, cap4b.imgData, cap4b.pxW, cap4b.pxH, curY, PW, PH, MARGIN);
-            curY += 8;
-        }
-
-        // ==============================================================
-        // SECTION 5 — QUESTION STYLE ANALYSIS
-        // ==============================================================
-        const style = data.style;
-        const combined5 = style.combined_style_distribution;
-        const perPaper5 = style.per_paper_style_distribution;
-        const cats = ['Numerical', 'Descriptive', 'Analytical'];
-        const catColors = { Numerical: C.gold, Descriptive: C.blue, Analytical: C.purple };
-        const catIcons  = { Numerical: '🔢', Descriptive: '📝', Analytical: '🧠' };
-        const catDesc   = {
-            Numerical:   'Calculation-heavy: formulae, derivations, step-by-step workings.',
-            Descriptive: 'Theory-based: conceptual clarity and structured written answers.',
-            Analytical:  'Case studies: apply concepts to novel scenarios and reason through.'
-        };
-
-        // 5a — Summary stat cards + overall bar
-        const sec5a = makeSection(C.black2);
-        sec5a.innerHTML = sectionBar('05 / 05', 'Question Style Analysis');
-
-        const statRow = document.createElement('div');
-        statRow.style.cssText = `display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;`;
-        cats.forEach(cat => {
-            const val = combined5[cat] || 0;
-            const col = catColors[cat];
-            const card = document.createElement('div');
-            card.style.cssText = `background:${C.black3};border:1px solid ${C.border};border-top:3px solid ${col};padding:22px 16px;text-align:center;`;
-            card.innerHTML = `
-                <div style="font-size:24px;margin-bottom:8px;">${catIcons[cat]}</div>
-                <div style="font-size:8px;letter-spacing:2px;color:${col};text-transform:uppercase;margin-bottom:8px;">${cat}</div>
-                <div style="font-size:40px;color:${C.white};line-height:1;margin-bottom:8px;">${val.toFixed(1)}<span style="font-size:16px;color:${C.whiteDim}">%</span></div>
-                <div style="font-size:9px;color:${C.whiteDim};line-height:1.5;font-style:italic;">${catDesc[cat]}</div>
-            `;
-            statRow.appendChild(card);
-        });
-        sec5a.appendChild(statRow);
-
-        // Overall distribution bar
-        const overallBar = document.createElement('div');
-        overallBar.style.cssText = `background:${C.black3};border:1px solid ${C.border};padding:20px;margin-bottom:16px;`;
-        overallBar.innerHTML = `
-            <div style="font-size:8px;letter-spacing:2px;color:${C.goldDim};margin-bottom:12px;">COMBINED DISTRIBUTION</div>
-            <div style="height:28px;display:flex;border-radius:2px;overflow:hidden;">
-                ${cats.map(cat => {
-                    const v = combined5[cat] || 0;
-                    return v > 0 ? `<div style="width:${v}%;background:${catColors[cat]};display:flex;align-items:center;justify-content:center;">
-                        ${v > 6 ? `<span style="font-size:9px;color:${C.black};font-weight:700;">${v.toFixed(0)}%</span>` : ''}
-                    </div>` : '';
-                }).join('')}
-            </div>
-            <div style="display:flex;gap:16px;margin-top:10px;">
-                ${cats.map(cat => `
-                    <div style="display:flex;align-items:center;gap:5px;">
-                        <div style="width:10px;height:10px;background:${catColors[cat]};border-radius:1px;"></div>
-                        <span style="font-size:9px;color:${C.whiteDim};">${cat} · ${(combined5[cat]||0).toFixed(1)}%</span>
-                    </div>`).join('')}
-            </div>
-        `;
-        sec5a.appendChild(overallBar);
-
-        // Insight callouts
-        const dominant = cats.reduce((a,b) => (combined5[a]||0) > (combined5[b]||0) ? a : b);
-        const rarest   = cats.reduce((a,b) => (combined5[a]||0) < (combined5[b]||0) ? a : b);
-        const pCount   = Object.keys(perPaper5).length;
-
-        const insightsRow = document.createElement('div');
-        insightsRow.style.cssText = `display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;`;
-        [
-            { icon: '🎯', label: 'Dominant Style', text: `<b style="color:${catColors[dominant]}">${dominant}</b> makes up ${(combined5[dominant]||0).toFixed(1)}% of all papers. Build your primary prep strategy around this.` },
-            { icon: '📊', label: 'Papers Analysed', text: `Style patterns derived from <b style="color:${C.gold}">${pCount} question paper${pCount!==1?'s':''}</b>. More papers = more reliable signal.` },
-            { icon: '💡', label: 'Least Asked', text: `<b style="color:${catColors[rarest]}">${rarest}</b> is least frequent at ${(combined5[rarest]||0).toFixed(1)}%. Do not skip — even rare styles carry marks.` }
-        ].forEach(ins => {
-            const d = document.createElement('div');
-            d.style.cssText = `background:${C.black4};border:1px solid ${C.border};padding:18px;`;
-            d.innerHTML = `
-                <div style="font-size:20px;margin-bottom:8px;">${ins.icon}</div>
-                <div style="font-size:8px;letter-spacing:2px;color:${C.gold};text-transform:uppercase;margin-bottom:6px;">${ins.label}</div>
-                <div style="font-size:10px;color:${C.whiteDim};line-height:1.6;">${ins.text}</div>
-            `;
-            insightsRow.appendChild(d);
-        });
-        sec5a.appendChild(insightsRow);
-
-        const cap5a = await captureSection(sec5a);
-        curY = await placeToPDF(pdf, cap5a.imgData, cap5a.pxW, cap5a.pxH, curY, PW, PH, MARGIN);
-        curY += 8;
-
-        // 5b — Per-paper style breakdown
-        const sec5b = makeSection(C.black2);
-        sec5b.innerHTML = sectionBar('05 / 05', 'Question Style — Per Paper Breakdown');
-
-        const paperStyleBlock = document.createElement('div');
-        paperStyleBlock.style.cssText = `background:${C.black3};border:1px solid ${C.border};padding:24px;`;
-        paperStyleBlock.innerHTML = `
-            <div style="font-size:8px;letter-spacing:2px;color:${C.goldDim};margin-bottom:20px;">PAPER-BY-PAPER STYLE DISTRIBUTION</div>
-            ${Object.entries(perPaper5).map(([paper, dist]) => {
-                const short = paper.replace(/cleaned_/,'').replace(/_scanned|\.json/g,'');
-                return `
-                <div style="margin-bottom:20px;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                        <span style="font-size:10px;color:${C.whiteDim};">${short}</span>
-                        <span style="font-size:8px;color:${C.border};">${cats.map(c=>`${c}: ${(dist[c]||0).toFixed(0)}%`).join(' · ')}</span>
-                    </div>
-                    <div style="height:20px;display:flex;border-radius:2px;overflow:hidden;">
-                        ${cats.map(cat => {
-                            const v = dist[cat] || 0;
-                            return v > 0 ? `<div style="width:${v}%;background:${catColors[cat]};display:flex;align-items:center;justify-content:center;">
-                                ${v > 8 ? `<span style="font-size:8px;color:${C.black};font-weight:700;">${v.toFixed(0)}%</span>` : ''}
-                            </div>` : '';
-                        }).join('')}
-                    </div>
-                </div>`;
-            }).join('')}
-            <div style="display:flex;gap:16px;margin-top:4px;">
-                ${cats.map(cat => `
-                    <div style="display:flex;align-items:center;gap:5px;">
-                        <div style="width:10px;height:10px;background:${catColors[cat]};border-radius:1px;"></div>
-                        <span style="font-size:9px;color:${C.whiteDim};">${cat}</span>
-                    </div>`).join('')}
-            </div>
-        `;
-        sec5b.appendChild(paperStyleBlock);
-
-        const cap5b = await captureSection(sec5b);
-        curY = await placeToPDF(pdf, cap5b.imgData, cap5b.pxW, cap5b.pxH, curY, PW, PH, MARGIN);
-
-        // ==============================================================
-        // CLOSING PAGE
-        // ==============================================================
+        // ════════════════════════════════════════════
+        // PAGE 7 — END PAGE
+        // ════════════════════════════════════════════
         pdf.addPage();
-        fr(0,0,PW,PH,...BLACK_RGB);
-        fr(0,0,PW,2,...GOLD_RGB);
+        fr(pdf, 0,0,PW,PH, ...BLACK_RGB);
+        fr(pdf, 0,0,PW,3, ...GOLD_RGB);
+        fr(pdf, 0,PH-3,PW,3, ...GOLD_RGB);
 
-        // Gold circle accent
+        // Decorative concentric squares
         pdf.setDrawColor(...GOLD_RGB); pdf.setLineWidth(0.3);
-        pdf.circle(PW/2, PH/2 - 20, 30, 'S');
-        pdf.setFillColor(...GOLD_RGB);
-        pdf.circle(PW/2, PH/2 - 20, 2, 'F');
+        const cx = PW/2, cy = PH/2 - 18;
+        [28, 22, 16].forEach((r, i) => {
+            pdf.setDrawColor(GOLD_RGB[0], GOLD_RGB[1], GOLD_RGB[2]);
+            pdf.setLineWidth(0.2 + i * 0.1);
+            pdf.rect(cx - r, cy - r, r*2, r*2);
+        });
+        // Gold dot centre
+        fr(pdf, cx-1.5, cy-1.5, 3, 3, ...GOLD_RGB);
 
-        tx('REPORT COMPLETE', PW/2, PH/2+2, 16, ...GOLD_RGB, 'center', 'bold');
-        tx('All insights derived solely from uploaded question papers.', PW/2, PH/2+14, 9, ...DIM_RGB, 'center', 'normal');
+        tx(pdf, 'REPORT COMPLETE', PW/2, PH/2 + 8, 15, ...GOLD_RGB, 'center', 'bold');
 
-        pdf.setDrawColor(...GOLD_RGB); pdf.setLineWidth(0.2);
-        pdf.line(PW/2-30, PH/2+20, PW/2+30, PH/2+20);
+        pdf.setDrawColor(...GOLD_RGB); pdf.setLineWidth(0.3);
+        pdf.line(PW/2 - 36, PH/2 + 15, PW/2 + 36, PH/2 + 15);
 
-        tx('PYQ Analyser · Evidence-Based Exam Intelligence', PW/2, PH/2+30, 8, ...DIM_RGB, 'center', 'italic');
-        tx(courseInfo, PW/2, PH-16, 7, ...DIM_RGB, 'center', 'normal');
-        tx(now.toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'}), PW/2, PH-10, 7, ...DIM_RGB, 'center', 'normal');
+        tx(pdf, 'All insights derived solely from uploaded question papers.', PW/2, PH/2 + 24, 8.5, ...DIM_RGB, 'center');
+        tx(pdf, 'PYQ Analyser · Evidence-Based Exam Intelligence', PW/2, PH/2 + 33, 7.5, ...DIM_RGB, 'center', 'italic');
+
+        tx(pdf, courseInfo, PW/2, PH - 20, 7, ...DIM_RGB, 'center');
+        tx(pdf, dateStr,    PW/2, PH - 12, 7, ...DIM_RGB, 'center');
 
         // ── Save ──
         const filename = `PYQ_Report_${courseInfo.replace(/[^a-zA-Z0-9]/g,'_')}_${now.toISOString().slice(0,10)}.pdf`;
@@ -3338,6 +2989,9 @@ async function downloadPDFReport() {
 
         msg.textContent = '✓ Report downloaded successfully!';
         msg.style.color = 'var(--green-term)';
+
+        // Scroll back to top after capture
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch(err) {
         console.error('PDF generation error:', err);
