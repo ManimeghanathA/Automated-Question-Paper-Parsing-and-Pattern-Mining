@@ -529,3 +529,8 @@ This project currently focuses on VIT-style syllabus structures, but the long-te
 * Web interface
 
 *Further improvements will focus on scalability, UI enhancements, and multi-institution support.*
+
+---
+>  — Project by  
+> Manimeghanath A 
+> Department of Computer Science and Engineering AI and ML — VIT Chennai
