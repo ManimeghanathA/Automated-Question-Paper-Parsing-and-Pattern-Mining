@@ -532,5 +532,5 @@ This project currently focuses on VIT-style syllabus structures, but the long-te
 
 ---
 >  — Project by  
-> Manimeghanath A 
+> Manimeghanath A <br>
 > Department of Computer Science and Engineering AI and ML — VIT Chennai
