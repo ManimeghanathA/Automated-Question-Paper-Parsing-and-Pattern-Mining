@@ -18,6 +18,17 @@
 </p>
 
 ---
+---
+
+## 📄 Sample Output
+
+<p align="center">
+  <a href="docs/sample_output.pdf" download>
+    <img src="https://img.shields.io/badge/Download-Sample%20PDF-blue?style=for-the-badge&logo=adobeacrobatreader">
+  </a>
+</p>
+
+---
 
 ## Why This Project Was Built (The Problem)
 
