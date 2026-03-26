@@ -104,6 +104,11 @@ Computes how marks are distributed across modules historically to answer: *Which
 
 ---
 
+
+> 🔬 **Curious about the internals?** Scroll down to the [**Technical Deep Dive**](#-technical-deep-dive--how-it-actually-works) section for a detailed breakdown of every component, every design decision, and how all the pieces fit together.
+
+---
+
 ## Challenges Faced During Development
 
 * **OCR Noise:** Scanned PDFs produce messy text. Solved via OCR normalization, duplicate removal, question reconstruction logic, and sub-question handling.
@@ -168,10 +173,6 @@ project/
     ├── syllabus_extract.py
     └── text_extract.py
 ```
-
-> 🔬 **Curious about the internals?** Scroll down to the [**Technical Deep Dive**](#-technical-deep-dive--how-it-actually-works) section for a detailed breakdown of every component, every design decision, and how all the pieces fit together.
-
----
 
 ## 🔬 Technical Deep Dive — How It Actually Works
 
