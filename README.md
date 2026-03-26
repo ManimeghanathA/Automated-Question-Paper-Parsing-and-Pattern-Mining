@@ -8,7 +8,7 @@
 ## Demo & Results Preview
 
 <p align="center">
-  <a href="https://youtu.be/WUUyRU3YLwc">
+  <a href="https://youtu.be/DIu8z9ix4_o">
     <img src="docs/demo_1.png" width="800">
   </a>
 </p>
