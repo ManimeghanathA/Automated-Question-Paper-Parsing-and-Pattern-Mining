@@ -29,6 +29,56 @@
 
 ---
 
+## 🖥️ Desktop Application
+
+Pyqify is available as a standalone Windows desktop application — no terminal, no Python setup, no technical knowledge required.
+
+### Prerequisites
+
+Install these before launching the app:
+
+1. **Ollama** — [https://ollama.com/download](https://ollama.com/download)
+   After installing, open a terminal and run:
+   ```bash
+   ollama pull qwen2.5:7b
+   ollama serve
+   ```
+
+2. **Tesseract OCR** — [Download from UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki)
+   Install to the default path: `C:\Program Files\Tesseract-OCR\`
+
+3. **Poppler** — [Download from oschwartz10612](https://github.com/oschwartz10612/poppler-windows/releases)
+   Extract to `C:\poppler\` and add `C:\poppler\Library\bin` to your system PATH.
+
+4. **Python 3.12** — [https://www.python.org/downloads/](https://www.python.org/downloads/)
+   During installation, check **"Add Python to PATH"**.
+   After installing, open a terminal and run:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Install the App
+
+1. Download `Pyqify Setup 1.0.0.exe` from the [Releases](https://github.com/ManimeghanathA/Automated-Question-Paper-Parsing-and-Pattern-Mining/releases) page.
+2. Run the installer — choose your install directory.
+3. A desktop shortcut and Start Menu entry are created automatically.
+
+<p align="center">
+  <a href="https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Pyqify%20v1.0.0-brightgreen?style=for-the-badge&logo=windows">
+  </a>
+</p>
+
+### Launch
+
+1. Make sure Ollama is running (`ollama serve` in a terminal).
+2. Open **Pyqify** from your desktop or Start Menu.
+3. The splash screen will verify Ollama and the model before loading the interface.
+
+> **Note:** The app uses your system Python installation. Ensure all dependencies from `requirements.txt` are installed before first launch.
+
+---
+
 ## Why This Project Was Built (The Problem)
 
 Preparing for university exams is often inefficient. Students usually have two main resources:
@@ -103,7 +153,6 @@ Identifies exam style patterns by classifying questions into categories such as:
 Computes how marks are distributed across modules historically to answer: *Which modules carry the most marks?*
 
 ---
-
 
 > 🔬 **Curious about the internals?** Scroll down to the [**Technical Deep Dive**](#-technical-deep-dive--how-it-actually-works) section for a detailed breakdown of every component, every design decision, and how all the pieces fit together.
 
