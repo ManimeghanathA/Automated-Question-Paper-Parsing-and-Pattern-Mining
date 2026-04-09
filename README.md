@@ -64,7 +64,7 @@ Install these before launching the app:
 3. A desktop shortcut and Start Menu entry are created automatically.
 
 <p align="center">
-  <a href="https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest">
+  <a href="https://github.com/ManimeghanathA/Automated-Question-Paper-Parsing-and-Pattern-Mining/releases/download/v1.0.0/Pyqify.Setup.1.0.0.exe">
     <img src="https://img.shields.io/badge/Download-Pyqify%20v1.0.0-brightgreen?style=for-the-badge&logo=windows">
   </a>
 </p>
