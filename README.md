@@ -46,7 +46,7 @@ Download both files from the [Releases](https://github.com/ManimeghanathA/Automa
     <img src="https://img.shields.io/badge/Download-Pyqify%20Installer%20(.exe)-brightgreen?style=for-the-badge&logo=windows">
   </a>
   &nbsp;
-  <a href="https://github.com/ManimeghanathA/Automated-Question-Paper-Parsing-and-Pattern-Mining/releases/latest/download/setup.bat">
+  <a href="https://github.com/ManimeghanathA/Automated-Question-Paper-Parsing-and-Pattern-Mining/releases/download/v1.0.0/setup.bat">
     <img src="https://img.shields.io/badge/Download-setup.bat%20(Run%20First)-blue?style=for-the-badge&logo=windowsterminal">
   </a>
 </p>
