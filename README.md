@@ -31,51 +31,117 @@
 
 ## 🖥️ Desktop Application
 
-Pyqify is available as a standalone Windows desktop application — no terminal, no Python setup, no technical knowledge required.
+Pyqify is available as a standalone Windows desktop application.
 
-### Prerequisites
+> **First time?** Run `setup.bat` before opening the app — it installs everything automatically.
 
-Install these before launching the app:
+---
 
-1. **Ollama** — [https://ollama.com/download](https://ollama.com/download)
-   After installing, open a terminal and run:
-   ```bash
-   ollama pull qwen2.5:7b
-   ollama serve
-   ```
+### Step 1 — Download
 
-2. **Tesseract OCR** — [Download from UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki)
-   Install to the default path: `C:\Program Files\Tesseract-OCR\`
-
-3. **Poppler** — [Download from oschwartz10612](https://github.com/oschwartz10612/poppler-windows/releases)
-   Extract to `C:\poppler\` and add `C:\poppler\Library\bin` to your system PATH.
-
-4. **Python 3.12** — [https://www.python.org/downloads/](https://www.python.org/downloads/)
-   During installation, check **"Add Python to PATH"**.
-   After installing, open a terminal and run:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-### Install the App
-
-1. Download `Pyqify Setup 1.0.0.exe` from the [Releases](https://github.com/ManimeghanathA/Automated-Question-Paper-Parsing-and-Pattern-Mining/releases) page.
-2. Run the installer — choose your install directory.
-3. A desktop shortcut and Start Menu entry are created automatically.
+Download both files from the [Releases](https://github.com/ManimeghanathA/Automated-Question-Paper-Parsing-and-Pattern-Mining/releases) page:
 
 <p align="center">
-  <a href="https://github.com/ManimeghanathA/Automated-Question-Paper-Parsing-and-Pattern-Mining/releases/download/v1.0.0/Pyqify.Setup.1.0.0.exe">
-    <img src="https://img.shields.io/badge/Download-Pyqify%20v1.0.0-brightgreen?style=for-the-badge&logo=windows">
+  <a href="https://github.com/ManimeghanathA/Automated-Question-Paper-Parsing-and-Pattern-Mining/releases/latest/download/Pyqify.Setup.1.0.0.exe">
+    <img src="https://img.shields.io/badge/Download-Pyqify%20Installer%20(.exe)-brightgreen?style=for-the-badge&logo=windows">
+  </a>
+  &nbsp;
+  <a href="https://github.com/ManimeghanathA/Automated-Question-Paper-Parsing-and-Pattern-Mining/releases/latest/download/setup.bat">
+    <img src="https://img.shields.io/badge/Download-setup.bat%20(Run%20First)-blue?style=for-the-badge&logo=windowsterminal">
   </a>
 </p>
 
-### Launch
+---
 
-1. Make sure Ollama is running (`ollama serve` in a terminal).
-2. Open **Pyqify** from your desktop or Start Menu.
-3. The splash screen will verify Ollama and the model before loading the interface.
+### Step 2 — Run `setup.bat` (One Time Only)
 
-> **Note:** The app uses your system Python installation. Ensure all dependencies from `requirements.txt` are installed before first launch.
+Right-click `setup.bat` → **Run as Administrator**
+
+This will automatically:
+- Download and install **Python 3.12** if not already installed
+- Install **PyTorch** and all Python dependencies
+- Download the **spaCy language model**
+- Save the Python path so Pyqify can find it
+
+⏱️ This takes **20–40 minutes**. The window may look frozen during that step. **Do not close it.**
+
+---
+
+### Step 3 — Install Tesseract OCR
+
+Required for reading text from scanned PDF question papers.
+
+1. Go to: https://github.com/UB-Mannheim/tesseract/wiki
+2. Download the Windows 64-bit installer (`.exe`)
+3. Run the installer — **do not change the install path**
+4. Default install path must be: `C:\Program Files\Tesseract-OCR\`
+
+---
+
+### Step 4 — Install Poppler
+
+Required for converting PDF pages into images for OCR processing.
+
+1. Go to: https://github.com/oschwartz10612/poppler-windows/releases
+2. Download the latest `.zip` file
+3. Extract it — rename the inner folder to `poppler`
+4. Move it so the path is: `C:\poppler\`
+5. Add Poppler to your system PATH:
+   - Search **"Environment Variables"** in Windows search
+   - Click **"Edit the system environment variables"**
+   - Under **System variables**, find `PATH` → click **Edit**
+   - Click **New** → paste: `C:\poppler\Library\bin`
+   - Click **OK** on all windows
+
+---
+
+### Step 5 — Install Ollama
+
+Ollama runs the local AI model that powers Pyqify's analysis engine.
+
+1. Go to: https://ollama.com/download
+2. Download and install **Ollama for Windows**
+3. Open a **new terminal** (press `Win`, type `cmd`, press `Enter`)
+4. Run this command and wait for it to finish (~5 GB download):
+   ```
+   ollama pull qwen2.5:7b
+   ```
+5. After the download finishes, run:
+   ```
+   ollama serve
+   ```
+6. **Keep this terminal window open** whenever you use Pyqify
+
+---
+
+### Step 6 — Install and Open Pyqify
+
+1. Run `Pyqify Setup 1.0.0.exe`
+2. Follow the installer — a desktop shortcut is created automatically
+3. Open **Pyqify** from your Desktop or Start Menu and **do not check run on install**, open the app manually
+
+The splash screen will verify Ollama and the model automatically before loading.
+
+---
+
+### Troubleshooting
+
+If Pyqify fails to start, check the following:
+
+| Problem | Fix |
+|---|---|
+| "Backend did not start in time" | Run `setup.bat` again as Administrator |
+| "Ollama is not running" | Open CMD and run `ollama serve` |
+| OCR not working | Make sure Tesseract is installed at `C:\Program Files\Tesseract-OCR\` |
+| PDF conversion failing | Make sure `C:\poppler\Library\bin` is in your system PATH |
+| Still failing | Open CMD, run the backend manually and paste the error |
+
+**Manual backend test** (to see exact errors):
+```cmd
+cd "C:\Users\<yourname>\AppData\Local\Programs\Pyqify\resources\backend"
+set PYTHONPATH=C:\Users\<yourname>\AppData\Local\Programs\Pyqify\resources
+C:\Users\<yourname>\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8765
+```
 
 ---
 
