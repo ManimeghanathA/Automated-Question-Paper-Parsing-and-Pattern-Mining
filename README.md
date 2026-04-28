@@ -603,7 +603,7 @@ sudo apt-get install tesseract-ocr poppler-utils
 ### 6. Running the System
 Start the FastAPI server:
 ```bash
-python backend/main.py
+pyq_env\Scripts\uvicorn.exe backend.main:app --host 127.0.0.1 --port 8765
 ```
 Open the interface in your browser.
 
